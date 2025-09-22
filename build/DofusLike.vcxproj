@@ -123,9 +123,20 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <PostBuildEvent>
-      <Message></Message>
+      <Message>	</Message>
       <Command>setlocal
 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/Users/PTRUJILLO/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Debug/DofusLike.exe -installedDir C:/Users/PTRUJILLO/vcpkg/installed/x64-windows/debug/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Debug/assets
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/assets C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Debug/assets
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -191,9 +202,20 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <PostBuildEvent>
-      <Message></Message>
+      <Message>	</Message>
       <Command>setlocal
 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/Users/PTRUJILLO/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Release/DofusLike.exe -installedDir C:/Users/PTRUJILLO/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Release/assets
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/assets C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/Release/assets
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -259,9 +281,20 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <PostBuildEvent>
-      <Message></Message>
+      <Message>	</Message>
       <Command>setlocal
 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/Users/PTRUJILLO/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/MinSizeRel/DofusLike.exe -installedDir C:/Users/PTRUJILLO/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/MinSizeRel/assets
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/assets C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/MinSizeRel/assets
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -326,9 +359,20 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <PostBuildEvent>
-      <Message></Message>
+      <Message>	</Message>
       <Command>setlocal
 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/Users/PTRUJILLO/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/RelWithDebInfo/DofusLike.exe -installedDir C:/Users/PTRUJILLO/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/RelWithDebInfo/assets
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_directory C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/assets C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/build/RelWithDebInfo/assets
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone

@@ -27,6 +27,7 @@ public:
     int getRemainingPM() const { return m_remainingPM; }
     int getTotalPM() const { return m_totalPM; }
     PawnState getState() const { return m_state; }
+    sf::FloatRect getGlobalBounds() const;
     
     std::vector<sf::Vector2i> getReachableTiles(const Map& map) const;
     void endTurn();
@@ -45,7 +46,7 @@ private:
     
     // Sistema de sprites
     bool m_useSprite = false;
-    sf::Sprite m_sprite{sf::Texture{}}; // Inicializar con textura vacía
+    sf::Sprite m_sprite; // Inicializar sin textura
     sf::Texture* m_texture = nullptr;
     Animation m_anim;
     sf::Vector2f m_spriteOffset = {0.f, 0.f};

@@ -43,6 +43,9 @@ private:
     // Sistema de mapas
     std::string m_currentMapFile;
     
+    // Debug overlay
+    bool gDebugOverlay = false;
+    
     void updateReachableTiles();
     void renderReachableTiles();
     void updateWindowTitle();

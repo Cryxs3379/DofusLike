@@ -1,5 +1,6 @@
 #include "units/Pawn.h"
 #include <algorithm>
+#include <iostream>
 
 Pawn::Pawn(sf::Vector2i startPosition) 
     : m_currentPosition(startPosition), 
@@ -8,7 +9,8 @@ Pawn::Pawn(sf::Vector2i startPosition)
       m_isMovingToTarget(false),
       m_totalPM(3),
       m_remainingPM(3),
-      m_state(PawnState::Idle) {
+      m_state(PawnState::Idle),
+      m_sprite(*Assets::getEmptyTexture()) {
     
     // Configurar círculo de fallback
     m_pawnShape.setRadius(8.0f);
@@ -22,26 +24,31 @@ Pawn::Pawn(sf::Vector2i startPosition)
     if (m_texture) {
         m_sprite.setTexture(*m_texture);
         
-        // si el rect es vacío, usa el tamaño de la textura
-        const auto rect = m_sprite.getTextureRect();
+        // Rect válido: si getTextureRect() es vacío, usa tamaño completo de la textura
+        auto rect = m_sprite.getTextureRect();
         sf::Vector2i texSize = (rect.size.x > 0 && rect.size.y > 0)
             ? rect.size
             : sf::Vector2i(static_cast<int>(m_texture->getSize().x),
                            static_cast<int>(m_texture->getSize().y));
         
-        // origen: pivote en "los pies" del personaje, centrado
+        // Origen en "los pies" centrados
         m_sprite.setOrigin({ texSize.x / 2.f, static_cast<float>(texSize.y) - 4.f });
         
-        // escala: ajusta la altura al tamaño de la loseta (aprox)
-        const float targetHeight = Map::TILE_SIZE * 1.2f;
-        const float scale = targetHeight / static_cast<float>(texSize.y);
-        m_spriteScale = { scale, scale };
-        m_sprite.setScale(m_spriteScale);
+        // Escala razonable (no cero)
+        const float targetHeight = 48.f; // ajusta si tu loseta requiere otro alto
+        float scale = (texSize.y > 0) ? (targetHeight / static_cast<float>(texSize.y)) : 1.f;
+        if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
+        m_sprite.setScale({scale, scale});
         
         // Offset para ajustar posición en la loseta
         m_spriteOffset = {0.f, -4.f};
         
         m_useSprite = true;
+        std::cout << "[Pawn] sprite ON size=" << texSize.x << "x" << texSize.y
+                  << " scale=" << scale << std::endl;
+    } else {
+        m_useSprite = false;
+        std::cout << "[Pawn] sprite OFF (fallback)" << std::endl;
     }
 }
 
@@ -167,4 +174,12 @@ void Pawn::updateScreenPosition(const Map& map) {
 
 void Pawn::consumePM(int amount) {
     m_remainingPM = std::max(0, m_remainingPM - amount);
+}
+
+sf::FloatRect Pawn::getGlobalBounds() const {
+    if (m_useSprite) {
+        return m_sprite.getGlobalBounds();
+    } else {
+        return m_pawnShape.getGlobalBounds();
+    }
 }

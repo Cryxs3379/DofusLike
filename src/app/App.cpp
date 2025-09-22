@@ -100,6 +100,11 @@ void App::handleEvents() {
                 // Tecla F6: guardar mapa actual
                 saveMapToFile("data/map01.saved.json");
             }
+            else if (kb->code == sf::Keyboard::Key::F8) {
+                // Tecla F8: toggle debug overlay
+                gDebugOverlay = !gDebugOverlay;
+                std::cout << "Debug overlay: " << (gDebugOverlay ? "ON" : "OFF") << std::endl;
+            }
         }
         
         if (auto mb = ev->getIf<sf::Event::MouseButtonPressed>()) {
@@ -169,6 +174,38 @@ void App::render() {
     
     // Renderizar HUD (siempre al final, encima de todo)
     m_hud.draw(m_window);
+    
+    // Debug overlay
+    if (gDebugOverlay) {
+        // Dibujar '+' en la posición de cada unidad
+        sf::RectangleShape crossH(sf::Vector2f(10, 2));
+        sf::RectangleShape crossV(sf::Vector2f(2, 10));
+        crossH.setFillColor(sf::Color::Yellow);
+        crossV.setFillColor(sf::Color::Yellow);
+        
+        // Player
+        sf::Vector2f playerPos = m_map.getTileCenter(m_player.getPosition().x, m_player.getPosition().y);
+        crossH.setPosition({playerPos.x - 5, playerPos.y - 1});
+        crossV.setPosition({playerPos.x - 1, playerPos.y - 5});
+        m_window.draw(crossH);
+        m_window.draw(crossV);
+        
+        // Enemy
+        sf::Vector2f enemyPos = m_map.getTileCenter(m_enemy.getPosition().x, m_enemy.getPosition().y);
+        crossH.setPosition({enemyPos.x - 5, enemyPos.y - 1});
+        crossV.setPosition({enemyPos.x - 1, enemyPos.y - 5});
+        m_window.draw(crossH);
+        m_window.draw(crossV);
+        
+        // Dibujar bounds del sprite del player
+        sf::FloatRect bounds = m_player.getGlobalBounds();
+        sf::RectangleShape boundsRect(sf::Vector2f(bounds.size.x, bounds.size.y));
+        boundsRect.setPosition({bounds.position.x, bounds.position.y});
+        boundsRect.setFillColor(sf::Color::Transparent);
+        boundsRect.setOutlineColor(sf::Color::Red);
+        boundsRect.setOutlineThickness(2);
+        m_window.draw(boundsRect);
+    }
     
     m_window.display();
 }

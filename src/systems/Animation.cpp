@@ -10,12 +10,21 @@ void Animation::update(float deltaTime) {
 }
 
 void Animation::apply(sf::Sprite& sprite) {
+    // Si no hay spritesheet (1 frame), no modificar textureRect
+    if (frameSize.x == 0 || frameSize.y == 0) {
+        return; // Deja que el sprite use la textura completa
+    }
+    
     // calcular subrect del frame actual
     const int left = static_cast<int>(current * frameSize.x);
     const int top  = static_cast<int>(row * frameSize.y);
     const int w    = static_cast<int>(frameSize.x);
     const int h    = static_cast<int>(frameSize.y);
-    sprite.setTextureRect(sf::IntRect({left, top}, {w, h}));
+    
+    // Solo aplicar si el rect es válido
+    if (w > 0 && h > 0) {
+        sprite.setTextureRect(sf::IntRect({left, top}, {w, h}));
+    }
 }
 
 void Animation::setDirection(int direction) {
