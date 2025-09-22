@@ -1,0 +1,2 @@
+C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/CMakeFiles/ALL_BUILD.dir
+C:/Users/PTRUJILLO/Desktop/Trujillo/DofusLike/CMakeFiles/ZERO_CHECK.dir

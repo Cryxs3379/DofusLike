@@ -1,0 +1,9 @@
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\main.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\main.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\app\App.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\App.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\map\Map.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\Map.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\map\Isometric.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\Isometric.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\units\Entity.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\Entity.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\units\Pawn.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\Pawn.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\TurnSystem.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\TurnSystem.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Pathfinding.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\Pathfinding.obj
+C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\LineOfSight.cpp;C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\build\DofusLike.dir\Debug\LineOfSight.obj
