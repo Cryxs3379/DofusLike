@@ -1,5 +1,6 @@
 #include "map/Map.h"
 #include <algorithm>
+#include <iostream>
 
 Map::Map() : m_blockedTiles(MAP_SIZE, std::vector<bool>(MAP_SIZE, false)), 
              m_hoveredTile(-1, -1) {
@@ -80,4 +81,45 @@ void Map::toggleTile(int x, int y) {
     if (isValidPosition(x, y)) {
         m_blockedTiles[y][x] = !m_blockedTiles[y][x];
     }
+}
+
+bool Map::loadFromArray(int width, int height, const std::vector<uint8_t>& blocked) {
+    // Validar dimensiones
+    if (width != MAP_SIZE || height != MAP_SIZE) {
+        std::cout << "Error: Dimensiones del mapa no coinciden. Esperado: " << MAP_SIZE 
+                  << "x" << MAP_SIZE << ", Obtenido: " << width << "x" << height << std::endl;
+        return false;
+    }
+    
+    if (static_cast<int>(blocked.size()) != width * height) {
+        std::cout << "Error: Tamaño del array blocked incorrecto. Esperado: " << width * height 
+                  << ", Obtenido: " << blocked.size() << std::endl;
+        return false;
+    }
+    
+    // Cargar datos
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int index = y * width + x;
+            m_blockedTiles[y][x] = (blocked[index] != 0);
+        }
+    }
+    
+    std::cout << "Mapa cargado desde array: " << width << "x" << height << " con " 
+              << std::count(blocked.begin(), blocked.end(), 1) << " casillas bloqueadas" << std::endl;
+    
+    return true;
+}
+
+std::vector<uint8_t> Map::exportBlockedLinear() const {
+    std::vector<uint8_t> result;
+    result.reserve(MAP_SIZE * MAP_SIZE);
+    
+    for (int y = 0; y < MAP_SIZE; ++y) {
+        for (int x = 0; x < MAP_SIZE; ++x) {
+            result.push_back(m_blockedTiles[y][x] ? 1 : 0);
+        }
+    }
+    
+    return result;
 }

@@ -14,6 +14,9 @@ add_executable(DofusLike
     src/systems/TurnSystem.cpp
     src/systems/Pathfinding.cpp
     src/systems/LineOfSight.cpp
+    src/systems/Spells.cpp
+    src/systems/HUD.cpp
+    src/systems/Json.cpp
 )
 
 target_include_directories(DofusLike PRIVATE src)

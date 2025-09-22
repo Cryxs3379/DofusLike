@@ -32,6 +32,11 @@ void Pawn::moveTo(sf::Vector2i targetPosition, const Map& map) {
     
     std::vector<sf::Vector2i> path = Pathfinding::findPath(map, m_currentPosition, targetPosition);
     if (!path.empty()) {
+        // Eliminar el primer nodo si es igual a la posición actual
+        if (!path.empty() && path.front() == m_currentPosition) {
+            path.erase(path.begin());
+        }
+        
         // Recortar el camino según los PM disponibles
         int maxSteps = m_remainingPM;
         if (static_cast<int>(path.size()) > maxSteps) {

@@ -4,6 +4,7 @@
 #include <vector>
 #include "map/Map.h"
 #include "systems/Pathfinding.h"
+#include "systems/Spells.h"
 
 enum class EntityType {
     Player,
@@ -46,11 +47,17 @@ public:
     bool isAlive() const { return m_hp > 0; }
     bool isInRange(sf::Vector2i target, int maxRange) const;
     
-    // Sistema de hechizos con alcance
+    // Sistema de hechizos mejorado
+    bool canCastSpell(const Spell& spell, sf::Vector2i targetCell, const Map& map) const;
+    std::vector<sf::Vector2i> getCastableCells(const Spell& spell, const Map& map) const;
+    bool castSpell(const Spell& spell, sf::Vector2i targetCell, const Map& map, Entity& target);
+    void applyEffect(const Spell& spell, Entity& target);
+    void consumePA(int amount);
+    
+    // Métodos de hechizos legacy (para compatibilidad)
     bool canCastSpell(sf::Vector2i targetCell, int minRange, int maxRange, const Map& map) const;
     std::vector<sf::Vector2i> getCastableCells(const Map& map, int minRange, int maxRange) const;
     void castSpell(sf::Vector2i targetCell, int minRange, int maxRange, const Map& map, int paCost);
-    void consumePA(int amount);
     
 private:
     sf::Vector2i m_currentPosition;

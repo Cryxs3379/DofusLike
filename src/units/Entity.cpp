@@ -1,5 +1,6 @@
 #include "units/Entity.h"
 #include "systems/LineOfSight.h"
+#include "systems/Spells.h"
 #include <algorithm>
 #include <iostream>
 
@@ -45,6 +46,12 @@ void Entity::moveTo(sf::Vector2i targetPosition, const Map& map) {
     std::cout << "Camino encontrado: " << path.size() << " pasos" << std::endl;
     
     if (!path.empty()) {
+        // Eliminar el primer nodo si es igual a la posición actual
+        if (!path.empty() && path.front() == m_currentPosition) {
+            path.erase(path.begin());
+            std::cout << "Eliminado primer nodo (posición actual)" << std::endl;
+        }
+        
         // Recortar el camino según los PM disponibles
         int maxSteps = m_remainingPM;
         if (static_cast<int>(path.size()) > maxSteps) {
@@ -116,7 +123,13 @@ bool Entity::tryCastStrike(sf::Vector2i targetCell, Entity& target) {
 }
 
 void Entity::takeDamage(int damage) {
-    m_hp = std::max(0, m_hp - damage);
+    if (damage > 0) {
+        // Daño normal
+        m_hp = std::max(0, m_hp - damage);
+    } else if (damage < 0) {
+        // Curación (damage negativo)
+        m_hp = std::min(100, m_hp - damage); // -(-15) = +15
+    }
 }
 
 bool Entity::isInRange(sf::Vector2i target, int maxRange) const {
@@ -206,5 +219,63 @@ void Entity::castSpell(sf::Vector2i targetCell, int minRange, int maxRange, cons
     if (canCastSpell(targetCell, minRange, maxRange, map)) {
         consumePA(paCost);
         std::cout << "Hechizo lanzado!" << std::endl;
+    }
+}
+
+// Nuevos métodos del sistema de hechizos mejorado
+bool Entity::canCastSpell(const Spell& spell, sf::Vector2i targetCell, const Map& map) const {
+    std::cout << "canCastSpell: " << spell.name << " PA=" << m_remainingPA << ", target=(" << targetCell.x << "," << targetCell.y << ")" << std::endl;
+    
+    // Verificar PA suficiente
+    if (m_remainingPA < spell.costPA) {
+        std::cout << "No hay PA suficientes para " << spell.name << " (necesita " << spell.costPA << ", tiene " << m_remainingPA << ")" << std::endl;
+        return false;
+    }
+    
+    // Verificar rango
+    if (!LineOfSight::isInRange(m_currentPosition, targetCell, spell.minRange, spell.maxRange)) {
+        std::cout << "Fuera de rango para " << spell.name << " (min=" << spell.minRange << ", max=" << spell.maxRange << ")" << std::endl;
+        return false;
+    }
+    
+    // Verificar LoS si es necesario
+    if (spell.needsLoS && !LineOfSight::hasLineOfSight(map, m_currentPosition, targetCell)) {
+        std::cout << "Sin línea de visión para " << spell.name << std::endl;
+        return false;
+    }
+    
+    std::cout << "Puede castear " << spell.name << "!" << std::endl;
+    return true;
+}
+
+std::vector<sf::Vector2i> Entity::getCastableCells(const Spell& spell, const Map& map) const {
+    return LineOfSight::computeCastableCells(map, m_currentPosition, spell.minRange, spell.maxRange, spell.needsLoS);
+}
+
+bool Entity::castSpell(const Spell& spell, sf::Vector2i targetCell, const Map& map, Entity& target) {
+    if (canCastSpell(spell, targetCell, map)) {
+        // Verificar que el objetivo esté en la celda objetivo
+        if (target.getPosition() == targetCell) {
+            std::cout << "*** LANZANDO " << spell.name << " ***" << std::endl;
+            applyEffect(spell, target);
+            consumePA(spell.costPA);
+            std::cout << "Hechizo " << spell.name << " lanzado exitosamente!" << std::endl;
+            return true;
+        } else {
+            std::cout << "No hay objetivo en la celda (" << targetCell.x << "," << targetCell.y << ")" << std::endl;
+        }
+    }
+    return false;
+}
+
+void Entity::applyEffect(const Spell& spell, Entity& target) {
+    if (spell.effectType == EffectType::Damage) {
+        target.takeDamage(spell.value);
+        std::cout << spell.name << " inflige " << spell.value << " de daño. HP objetivo: " << target.getHP() << std::endl;
+    } else if (spell.effectType == EffectType::Heal) {
+        // Para curar, necesitamos un método público o hacer m_hp público
+        // Por ahora, usaremos takeDamage con valor negativo
+        target.takeDamage(-spell.value);
+        std::cout << spell.name << " cura " << spell.value << " HP. HP objetivo: " << target.getHP() << std::endl;
     }
 }

@@ -1,5 +1,6 @@
 #include "systems/Pathfinding.h"
 #include <algorithm>
+#include <iostream>
 
 std::vector<sf::Vector2i> Pathfinding::getReachableTiles(const Map& map, sf::Vector2i startPos, int maxCost) {
     std::vector<sf::Vector2i> reachableTiles;
@@ -37,40 +38,51 @@ std::vector<sf::Vector2i> Pathfinding::getReachableTiles(const Map& map, sf::Vec
 }
 
 std::vector<sf::Vector2i> Pathfinding::findPath(const Map& map, sf::Vector2i start, sf::Vector2i end) {
-    std::map<sf::Vector2i, sf::Vector2i, Vec2Less> parent;
-    std::queue<sf::Vector2i> queue;
-    std::set<sf::Vector2i, Vec2Less> visited;
+    // Algoritmo A* con heurística Manhattan
+    std::priority_queue<AStarNode, std::vector<AStarNode>, std::greater<AStarNode>> openSet;
+    std::unordered_map<sf::Vector2i, sf::Vector2i, Vec2Hash> parent;
+    std::unordered_map<sf::Vector2i, int, Vec2Hash> gCost;
+    std::set<sf::Vector2i, Vec2Less> closedSet;
     
-    queue.push(start);
-    visited.insert(start);
+    // Inicializar
+    int startH = manhattanDistance(start, end);
+    openSet.push(AStarNode(start, 0, startH));
+    gCost[start] = 0;
     
-    while (!queue.empty()) {
-        sf::Vector2i current = queue.front();
-        queue.pop();
+    
+    while (!openSet.empty()) {
+        AStarNode current = openSet.top();
+        openSet.pop();
         
-        if (current == end) {
-            // Reconstruir el camino
-            std::vector<sf::Vector2i> path;
-            sf::Vector2i node = end;
-            
-            while (node != start) {
-                path.push_back(node);
-                node = parent[node];
-            }
-            path.push_back(start);
-            
-            std::reverse(path.begin(), path.end());
-            return path;
+        // Si ya procesamos este nodo, saltarlo
+        if (closedSet.find(current.position) != closedSet.end()) {
+            continue;
         }
         
-        for (auto neighbor : getNeighbors(current)) {
+        closedSet.insert(current.position);
+        
+        // Si llegamos al destino, reconstruir el camino
+        if (current.position == end) {
+            return reconstructPath(parent, start, end);
+        }
+        
+        // Explorar vecinos
+        for (auto neighbor : getNeighbors(current.position)) {
             if (!map.isValidPosition(neighbor.x, neighbor.y)) continue;
             if (map.isBlocked(neighbor.x, neighbor.y)) continue;
-            if (visited.find(neighbor) != visited.end()) continue;
+            if (closedSet.find(neighbor) != closedSet.end()) continue;
             
-            visited.insert(neighbor);
-            parent[neighbor] = current;
-            queue.push(neighbor);
+            int tentativeGCost = current.gCost + getMovementCost(map, current.position, neighbor);
+            
+            // Si no hemos visitado este nodo o encontramos un camino mejor
+            auto gIt = gCost.find(neighbor);
+            if (gIt == gCost.end() || tentativeGCost < gIt->second) {
+                parent[neighbor] = current.position;
+                gCost[neighbor] = tentativeGCost;
+                
+                int hCost = manhattanDistance(neighbor, end);
+                openSet.push(AStarNode(neighbor, tentativeGCost, hCost));
+            }
         }
     }
     
@@ -88,5 +100,32 @@ std::vector<sf::Vector2i> Pathfinding::getNeighbors(sf::Vector2i pos) {
 
 int Pathfinding::getMovementCost(const Map& map, sf::Vector2i from, sf::Vector2i to) {
     // Costo de movimiento ortogonal: 1 PM por casilla
+    // Preparado para futuros costes variables por terreno
     return 1;
+}
+
+int Pathfinding::manhattanDistance(sf::Vector2i a, sf::Vector2i b) {
+    return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+}
+
+std::vector<sf::Vector2i> Pathfinding::reconstructPath(const std::unordered_map<sf::Vector2i, sf::Vector2i, Vec2Hash>& parent, sf::Vector2i start, sf::Vector2i end) {
+    std::vector<sf::Vector2i> path;
+    sf::Vector2i current = end;
+    
+    // Reconstruir el camino desde el destino hasta el inicio
+    while (current != start) {
+        path.push_back(current);
+        auto it = parent.find(current);
+        if (it == parent.end()) {
+            // No debería pasar si el algoritmo está bien implementado
+            return {};
+        }
+        current = it->second;
+    }
+    
+    // Invertir para que vaya del inicio al destino
+    std::reverse(path.begin(), path.end());
+    
+    // NO incluir la casilla de origen - el path debe contener solo las casillas a pisar
+    return path;
 }

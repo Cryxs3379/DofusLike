@@ -22,6 +22,12 @@ public:
     sf::Vector2f getTileCenter(int x, int y) const;
     sf::Vector2i getTileFromPosition(sf::Vector2f position) const;
     
+    // Métodos para carga/guardado de mapas
+    bool loadFromArray(int width, int height, const std::vector<uint8_t>& blocked);
+    std::vector<uint8_t> exportBlockedLinear() const;
+    int getWidth() const { return MAP_SIZE; }
+    int getHeight() const { return MAP_SIZE; }
+    
 private:
     std::vector<std::vector<bool>> m_blockedTiles;
     sf::Vector2i m_hoveredTile;
