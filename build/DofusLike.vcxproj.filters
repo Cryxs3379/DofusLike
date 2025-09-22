@@ -37,6 +37,12 @@
     <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Json.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Assets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Animation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\CMakeLists.txt" />

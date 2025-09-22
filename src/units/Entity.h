@@ -5,6 +5,8 @@
 #include "map/Map.h"
 #include "systems/Pathfinding.h"
 #include "systems/Spells.h"
+#include "systems/Assets.h"
+#include "systems/Animation.h"
 
 enum class EntityType {
     Player,
@@ -69,6 +71,14 @@ private:
     sf::CircleShape m_entityShape;
     sf::Vector2f m_targetScreenPosition;
     bool m_isMovingToTarget;
+    
+    // Sistema de sprites
+    bool m_useSprite = false;
+    sf::Sprite m_sprite; // Inicializar sin textura
+    sf::Texture* m_texture = nullptr; // no owns
+    Animation m_anim;
+    sf::Vector2f m_spriteOffset = {0.f, 0.f}; // para ajustar apoyo en losetas
+    sf::Vector2f m_spriteScale = {1.f, 1.f};
     
     // Sistema de recursos
     int m_totalPM;

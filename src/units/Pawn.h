@@ -4,6 +4,8 @@
 #include <vector>
 #include "map/Map.h"
 #include "systems/Pathfinding.h"
+#include "systems/Assets.h"
+#include "systems/Animation.h"
 
 enum class PawnState {
     Idle,
@@ -40,6 +42,14 @@ private:
     sf::CircleShape m_pawnShape;
     sf::Vector2f m_targetScreenPosition;
     bool m_isMovingToTarget;
+    
+    // Sistema de sprites (deshabilitado por problemas de SFML 3)
+    // bool m_useSprite = false;
+    // sf::Sprite m_sprite;
+    // sf::Texture* m_texture = nullptr;
+    // Animation m_anim;
+    // sf::Vector2f m_spriteOffset = {0.f, 0.f};
+    // sf::Vector2f m_spriteScale = {1.f, 1.f};
     
     // Sistema de PM
     int m_totalPM;
