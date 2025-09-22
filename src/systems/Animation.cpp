@@ -10,12 +10,12 @@ void Animation::update(float deltaTime) {
 }
 
 void Animation::apply(sf::Sprite& sprite) {
-    // Calcular posición del frame en el spritesheet
-    int left = current * frameSize.x;
-    int top = row * frameSize.y;
-    
-    // Aplicar textura rect al sprite
-    sprite.setTextureRect(sf::IntRect{left, top, static_cast<int>(frameSize.x), static_cast<int>(frameSize.y)});
+    // calcular subrect del frame actual
+    const int left = static_cast<int>(current * frameSize.x);
+    const int top  = static_cast<int>(row * frameSize.y);
+    const int w    = static_cast<int>(frameSize.x);
+    const int h    = static_cast<int>(frameSize.y);
+    sprite.setTextureRect(sf::IntRect({left, top}, {w, h}));
 }
 
 void Animation::setDirection(int direction) {

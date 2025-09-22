@@ -43,13 +43,13 @@ private:
     sf::Vector2f m_targetScreenPosition;
     bool m_isMovingToTarget;
     
-    // Sistema de sprites (deshabilitado por problemas de SFML 3)
-    // bool m_useSprite = false;
-    // sf::Sprite m_sprite;
-    // sf::Texture* m_texture = nullptr;
-    // Animation m_anim;
-    // sf::Vector2f m_spriteOffset = {0.f, 0.f};
-    // sf::Vector2f m_spriteScale = {1.f, 1.f};
+    // Sistema de sprites
+    bool m_useSprite = false;
+    sf::Sprite m_sprite{sf::Texture{}}; // Inicializar con textura vacía
+    sf::Texture* m_texture = nullptr;
+    Animation m_anim;
+    sf::Vector2f m_spriteOffset = {0.f, 0.f};
+    sf::Vector2f m_spriteScale = {1.f, 1.f};
     
     // Sistema de PM
     int m_totalPM;

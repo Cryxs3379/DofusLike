@@ -22,14 +22,20 @@ Pawn::Pawn(sf::Vector2i startPosition)
     if (m_texture) {
         m_sprite.setTexture(*m_texture);
         
-        // Ajustar origen al pivote de pies (centro horizontal, base vertical)
-        sf::IntRect textureRect = m_sprite.getTextureRect();
-        m_sprite.setOrigin({textureRect.width / 2.0f, textureRect.height - 4.0f});
+        // si el rect es vacío, usa el tamaño de la textura
+        const auto rect = m_sprite.getTextureRect();
+        sf::Vector2i texSize = (rect.size.x > 0 && rect.size.y > 0)
+            ? rect.size
+            : sf::Vector2i(static_cast<int>(m_texture->getSize().x),
+                           static_cast<int>(m_texture->getSize().y));
         
-        // Escalar para que encaje con la loseta (alto visual ≈ TILE_SIZE * 1.2)
-        float targetHeight = Map::TILE_SIZE * 1.2f;
-        float scale = targetHeight / textureRect.height;
-        m_spriteScale = {scale, scale};
+        // origen: pivote en "los pies" del personaje, centrado
+        m_sprite.setOrigin({ texSize.x / 2.f, static_cast<float>(texSize.y) - 4.f });
+        
+        // escala: ajusta la altura al tamaño de la loseta (aprox)
+        const float targetHeight = Map::TILE_SIZE * 1.2f;
+        const float scale = targetHeight / static_cast<float>(texSize.y);
+        m_spriteScale = { scale, scale };
         m_sprite.setScale(m_spriteScale);
         
         // Offset para ajustar posición en la loseta

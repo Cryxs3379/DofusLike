@@ -74,7 +74,7 @@ private:
     
     // Sistema de sprites
     bool m_useSprite = false;
-    sf::Sprite m_sprite; // Inicializar sin textura
+    sf::Sprite m_sprite{sf::Texture{}}; // Inicializar con textura vacía
     sf::Texture* m_texture = nullptr; // no owns
     Animation m_anim;
     sf::Vector2f m_spriteOffset = {0.f, 0.f}; // para ajustar apoyo en losetas
