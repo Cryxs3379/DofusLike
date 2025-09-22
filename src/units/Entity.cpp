@@ -31,28 +31,48 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
     if (m_texture) {
         m_sprite.setTexture(*m_texture);
         
-        // Rect válido: si getTextureRect() es vacío, usa tamaño completo de la textura
-        auto rect = m_sprite.getTextureRect();
-        sf::Vector2i texSize = (rect.size.x > 0 && rect.size.y > 0)
-            ? rect.size
-            : sf::Vector2i(static_cast<int>(m_texture->getSize().x),
-                           static_cast<int>(m_texture->getSize().y));
+        // 1) Rect completo por seguridad (SFML 3 a veces deja 1x1 por defecto)
+        m_sprite.setTextureRect(sf::IntRect({0,0}, {
+            static_cast<int>(m_texture->getSize().x),
+            static_cast<int>(m_texture->getSize().y)
+        }));
         
-        // Origen en "los pies" centrados
-        m_sprite.setOrigin({ texSize.x / 2.f, static_cast<float>(texSize.y) - 4.f });
+        // 2) Config de animación para spritesheet 720x330: 8 columnas, 3 filas -> 90x110 por frame
+        auto tex = m_texture->getSize();
+        if (tex.x == 720 && tex.y == 330) {
+            m_anim.columns = 8;
+            m_anim.frameSize = {90u, 110u};
+        } else {
+            // fallback: no animar, usar textura completa
+            m_anim.columns = 1;
+            m_anim.frameSize = {0u, 0u}; // hará que Animation::apply no toque el rect
+        }
+        m_anim.row = 0;     // idle
+        m_anim.current = 0;
+        m_anim.timer = 0.f;
+        m_anim.frameDuration = 0.12f; // un poco más fluida
         
-        // Escala razonable (no cero)
-        const float targetHeight = 48.f; // ajusta si tu loseta requiere otro alto
-        float scale = (texSize.y > 0) ? (targetHeight / static_cast<float>(texSize.y)) : 1.f;
+        // 3) El tamaño para origin/escala debe ser el DEL FRAME, no el de la textura completa
+        sf::Vector2i frameSize(static_cast<int>(m_anim.frameSize.x), static_cast<int>(m_anim.frameSize.y));
+        if (frameSize.x == 0 || frameSize.y == 0) {
+            // Fallback: usar tamaño completo de textura
+            frameSize = sf::Vector2i(static_cast<int>(tex.x), static_cast<int>(tex.y));
+        }
+        
+        m_sprite.setOrigin({ frameSize.x / 2.f, static_cast<float>(frameSize.y) - 4.f });
+        
+        // Escala: altura del frame al alto de la loseta aprox
+        const float targetHeight = Map::TILE_SIZE * 1.2f; // 48 si TILE_SIZE=40
+        float scale = targetHeight / static_cast<float>(frameSize.y);
         if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
         m_sprite.setScale({scale, scale});
         
-        // Offset para ajustar posición en la loseta
+        // Offset para apoyar "en los pies"
         m_spriteOffset = {0.f, -4.f};
-        
         m_useSprite = true;
-        std::cout << "[Entity] sprite ON size=" << texSize.x << "x" << texSize.y
-                  << " scale=" << scale << std::endl;
+        
+        std::cout << "[Entity] sprite ON size=" << frameSize.x << "x" << frameSize.y
+                  << " scale=" << scale << " anim=" << m_anim.columns << "x" << m_anim.frameSize.x << "x" << m_anim.frameSize.y << std::endl;
     } else {
         m_useSprite = false;
         std::cout << "[Entity] sprite OFF (fallback)" << std::endl;
