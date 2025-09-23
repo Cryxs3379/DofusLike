@@ -471,6 +471,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Json.cpp" />
     <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Assets.cpp" />
     <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Animation.cpp" />
+    <ClCompile Include="C:\Users\PTRUJILLO\Desktop\Trujillo\DofusLike\src\systems\Display.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

@@ -4,8 +4,8 @@
 
 Map::Map() : m_blockedTiles(MAP_SIZE, std::vector<bool>(MAP_SIZE, false)), 
              m_hoveredTile(-1, -1) {
-    // Centrar el mapa en la pantalla
-    m_offset = sf::Vector2f(400.0f, 300.0f);
+    // Offset inicial; se recalcula al aplicar letterboxing para centrar
+    m_offset = sf::Vector2f(0.0f, 0.0f);
 }
 
 void Map::render(sf::RenderWindow& window) {
@@ -63,6 +63,21 @@ sf::Vector2f Map::getTileCenter(int x, int y) const {
     screenPos.x += TILE_SIZE * 0.5f;
     screenPos.y += TILE_SIZE * 0.5f;
     return screenPos;
+}
+
+sf::Vector2f Map::getTileTopLeft(int x, int y) const {
+    sf::Vector2f screenPos = Isometric::isoToScreen(sf::Vector2i(x, y), sf::Vector2f(TILE_SIZE, TILE_SIZE));
+    screenPos += m_offset;
+    return screenPos;
+}
+
+void Map::setCenteredOffset(sf::Vector2f viewSize) {
+    // Centrar el rombo del mapa dentro de la vista virtual 1280x720
+    // El tamaño del rombo en píxeles: ancho = MAP_SIZE*TILE_SIZE, alto = MAP_SIZE*TILE_SIZE
+    const float mapW = MAP_SIZE * TILE_SIZE;
+    const float mapH = MAP_SIZE * TILE_SIZE;
+    m_offset.x = (viewSize.x - mapW) * 0.5f;
+    m_offset.y = (viewSize.y - mapH) * 0.5f;
 }
 
 sf::Vector2i Map::getTileFromPosition(sf::Vector2f position) const {

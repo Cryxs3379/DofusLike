@@ -70,4 +70,7 @@ private:
     void loadMapFromFile(const std::string& path);
     void saveMapToFile(const std::string& path);
     void reloadMap();
+    
+    // Sistema responsive
+    float calculateVirtualScale() const;
 };

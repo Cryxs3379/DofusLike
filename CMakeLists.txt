@@ -19,6 +19,7 @@ add_executable(DofusLike
     src/systems/Json.cpp
     src/systems/Assets.cpp
     src/systems/Animation.cpp
+    src/systems/Display.cpp
 )
 
 target_include_directories(DofusLike PRIVATE src)

@@ -16,7 +16,7 @@ const sf::Color HUD::GOLPE_COLOR = sf::Color(220, 20, 20);        // Rojo
 const sf::Color HUD::FLECHA_COLOR = sf::Color(20, 220, 20);       // Verde
 const sf::Color HUD::CURAR_COLOR = sf::Color(255, 255, 0);        // Amarillo
 
-HUD::HUD() : m_isPlayerTurn(true), m_activeSpellIndex(0), m_windowSize(1280, 720) {
+HUD::HUD() : m_isPlayerTurn(true), m_activeSpellIndex(0), m_windowSize(1280, 720), m_virtualScale(1.0f) {
 }
 
 void HUD::setPlayerStats(int hp, int maxHp, int pa, int maxPa, int pm, int maxPm) {
@@ -49,16 +49,24 @@ void HUD::setWindowSize(sf::Vector2u windowSize) {
     m_windowSize = windowSize;
 }
 
+void HUD::setVirtualScale(float scale) {
+    m_virtualScale = scale;
+}
+
 void HUD::draw(sf::RenderTarget& target) {
-    // Dimensiones del HUD (barra superior)
-    float hudHeight = 120.0f;
-    float panelWidth = m_windowSize.x * 0.4f; // 40% del ancho de ventana
-    float panelHeight = 80.0f;
-    float panelSpacing = m_windowSize.x * 0.1f; // 10% de separación
+    // Dimensiones del HUD basadas en resolución virtual (1280x720)
+    const float VIRTUAL_WIDTH = 1280.0f;
+    const float VIRTUAL_HEIGHT = 720.0f;
     
-    // Posiciones de los paneles
+    // Dimensiones en unidades virtuales (la View se encarga del escalado)
+    float hudHeight = 120.0f;
+    float panelWidth = VIRTUAL_WIDTH * 0.4f; // 40% del ancho virtual
+    float panelHeight = 80.0f;
+    float panelSpacing = VIRTUAL_WIDTH * 0.1f; // 10% de separación
+    
+    // Posiciones de los paneles (coordenadas virtuales)
     float leftPanelX = panelSpacing;
-    float rightPanelX = m_windowSize.x - panelSpacing - panelWidth;
+    float rightPanelX = VIRTUAL_WIDTH - panelSpacing - panelWidth;
     float panelY = 20.0f;
     
     // Dibujar panel del jugador
@@ -112,7 +120,8 @@ void HUD::draw(sf::RenderTarget& target) {
 void HUD::drawPanel(sf::RenderTarget& target, float x, float y, float width, float height, bool isActive) {
     // Dibujar glow de turno si está activo
     if (isActive) {
-        drawTurnIndicator(target, x - 5.0f, y - 5.0f, width + 10.0f, height + 10.0f);
+        float glowOffset = 5.0f;
+        drawTurnIndicator(target, x - glowOffset, y - glowOffset, width + glowOffset * 2, height + glowOffset * 2);
     }
     
     // Fondo del panel
@@ -164,8 +173,9 @@ void HUD::drawSpellSlots(sf::RenderTarget& target, float x, float y) {
         target.draw(slot);
         
         // Color del hechizo (pequeño rectángulo interno)
-        sf::RectangleShape spellColor(sf::Vector2f(slotWidth - 4.0f, slotHeight - 4.0f));
-        spellColor.setPosition({slotX + 2.0f, y + 2.0f});
+        float innerOffset = 2.0f;
+        sf::RectangleShape spellColor(sf::Vector2f(slotWidth - innerOffset * 2.0f, slotHeight - innerOffset * 2.0f));
+        spellColor.setPosition({slotX + innerOffset, y + innerOffset});
         spellColor.setFillColor(getSpellColor(i));
         target.draw(spellColor);
     }
@@ -188,18 +198,19 @@ sf::Color HUD::getSpellColor(int spellIndex) const {
 }
 
 sf::Vector2f HUD::getPanelPosition(bool isPlayer) const {
-    float panelWidth = m_windowSize.x * 0.4f;
-    float panelSpacing = m_windowSize.x * 0.1f;
+    const float VIRTUAL_WIDTH = 1280.0f;
+    float panelWidth = VIRTUAL_WIDTH * 0.4f;
+    float panelSpacing = VIRTUAL_WIDTH * 0.1f;
     
     if (isPlayer) {
         return sf::Vector2f(panelSpacing, 20.0f);
     } else {
-        return sf::Vector2f(m_windowSize.x - panelSpacing - panelWidth, 20.0f);
+        return sf::Vector2f(VIRTUAL_WIDTH - panelSpacing - panelWidth, 20.0f);
     }
 }
 
 sf::Vector2f HUD::getSpellSlotsPosition() const {
-    float panelWidth = m_windowSize.x * 0.4f;
-    float panelSpacing = m_windowSize.x * 0.1f;
-    return sf::Vector2f(panelSpacing, 20.0f + 80.0f + 10.0f);
+    const float VIRTUAL_WIDTH = 1280.0f;
+    float panelSpacing = VIRTUAL_WIDTH * 0.1f;
+    return sf::Vector2f(panelSpacing, (20.0f + 80.0f + 10.0f));
 }

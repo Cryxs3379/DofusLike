@@ -20,6 +20,8 @@ public:
     bool isValidPosition(int x, int y) const;
     
     sf::Vector2f getTileCenter(int x, int y) const;
+    sf::Vector2f getTileTopLeft(int x, int y) const;
+    void setCenteredOffset(sf::Vector2f viewSize);
     sf::Vector2i getTileFromPosition(sf::Vector2f position) const;
     
     // Métodos para carga/guardado de mapas

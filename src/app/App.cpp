@@ -1,5 +1,6 @@
 #include "app/App.h"
 #include <iostream>
+#include "systems/Display.h"
 
 App::App() : m_window(sf::VideoMode({1200u, 800u}), "DofusLike - Sistema de Turnos"),
              m_player(sf::Vector2i(7, 7), EntityType::Player),
@@ -20,6 +21,9 @@ App::App() : m_window(sf::VideoMode({1200u, 800u}), "DofusLike - Sistema de Turn
     
     // Configurar HUD
     m_hud.setWindowSize(m_window.getSize());
+    m_hud.setVirtualScale(calculateVirtualScale());
+    Display::applyLetterbox(m_window);
+    Display::centerMapInView(m_map);
     
     // Cargar mapa inicial
     loadMapFromFile(m_currentMapFile);
@@ -43,6 +47,13 @@ void App::handleEvents() {
         if (ev->is<sf::Event::Closed>()) {
             m_window.close();
         }
+
+        if (auto* r = ev->getIf<sf::Event::Resized>()) {
+            m_hud.setWindowSize(sf::Vector2u(r->size.x, r->size.y));
+            m_hud.setVirtualScale(calculateVirtualScale());
+            Display::applyLetterbox(m_window);
+            Display::centerMapInView(m_map);
+        }
         
         if (auto kb = ev->getIf<sf::Event::KeyPressed>()) {
             if (kb->code == sf::Keyboard::Key::Enter) {
@@ -52,6 +63,15 @@ void App::handleEvents() {
                     updateReachableTiles();
                     updateWindowTitle();
                 }
+            }
+            else if (kb->code == sf::Keyboard::Key::F11) {
+                // Borderless fullscreen toggle (simple: ir a borderless)
+                auto desktop = sf::VideoMode::getDesktopMode();
+                m_window.create(sf::VideoMode({desktop.size.x, desktop.size.y}), "DofusLike - Sistema de Turnos", sf::Style::None);
+                m_hud.setWindowSize(m_window.getSize());
+                m_hud.setVirtualScale(calculateVirtualScale());
+                Display::applyLetterbox(m_window);
+                Display::centerMapInView(m_map);
             }
             else if (kb->code == sf::Keyboard::Key::Space) {
                 // Tecla Espacio: castear hechizo en modo targeting
@@ -108,12 +128,13 @@ void App::handleEvents() {
         }
         
         if (auto mb = ev->getIf<sf::Event::MouseButtonPressed>()) {
-            sf::Vector2f mousePos = sf::Vector2f(mb->position.x, mb->position.y);
+            // Convertir coordenadas de píxeles a coords de la view letterbox
+            sf::Vector2f mousePos = m_window.mapPixelToCoords(sf::Vector2i(mb->position.x, mb->position.y));
             handlePlayerInput(mousePos, mb->button);
         }
         
         if (auto mm = ev->getIf<sf::Event::MouseMoved>()) {
-            sf::Vector2f mousePos = sf::Vector2f(mm->position.x, mm->position.y);
+            sf::Vector2f mousePos = m_window.mapPixelToCoords(sf::Vector2i(mm->position.x, mm->position.y));
             m_map.updateHover(mousePos);
             
             // Actualizar targeting si está activo
@@ -155,6 +176,9 @@ void App::update(float deltaTime) {
 void App::render() {
     m_window.clear(sf::Color(50, 50, 50)); // Fondo gris oscuro
     
+    // Dibujo con la view letterbox (mundo + HUD)
+    Display::applyLetterbox(m_window);
+    
     // Renderizar el mapa
     m_map.render(m_window);
     
@@ -172,7 +196,7 @@ void App::render() {
     m_player.render(m_window, m_map);
     m_enemy.render(m_window, m_map);
     
-    // Renderizar HUD (siempre al final, encima de todo)
+    // Renderizar HUD (siempre al final)
     m_hud.draw(m_window);
     
     // Debug overlay
@@ -223,8 +247,7 @@ void App::updateReachableTiles() {
 
 void App::renderReachableTiles() {
     for (const auto& tile : m_reachableTiles) {
-        sf::Vector2f screenPos = Isometric::isoToScreen(sf::Vector2i(tile.x, tile.y), sf::Vector2f(Map::TILE_SIZE, Map::TILE_SIZE));
-        screenPos += sf::Vector2f(400.0f, 300.0f); // Offset del mapa
+        sf::Vector2f screenPos = m_map.getTileTopLeft(tile.x, tile.y);
         
         auto diamond = Isometric::createDiamond(sf::Vector2f(Map::TILE_SIZE, Map::TILE_SIZE), sf::Color(0, 255, 255, 100));
         diamond.setPosition(screenPos);
@@ -306,8 +329,7 @@ void App::renderTargeting() {
     spellColor.a = 150; // Hacer semi-transparente
     
     for (const auto& cell : m_castableCells) {
-        sf::Vector2f screenPos = Isometric::isoToScreen(sf::Vector2i(cell.x, cell.y), sf::Vector2f(Map::TILE_SIZE, Map::TILE_SIZE));
-        screenPos += sf::Vector2f(400.0f, 300.0f); // Offset del mapa
+        sf::Vector2f screenPos = m_map.getTileTopLeft(cell.x, cell.y);
         
         auto diamond = Isometric::createDiamond(sf::Vector2f(Map::TILE_SIZE, Map::TILE_SIZE), spellColor);
         diamond.setPosition(screenPos);
@@ -319,8 +341,7 @@ void App::renderTargeting() {
         bool isValidTarget = std::find(m_castableCells.begin(), m_castableCells.end(), m_currentTargetCell) != m_castableCells.end();
         
         if (isValidTarget) {
-            sf::Vector2f screenPos = Isometric::isoToScreen(sf::Vector2i(m_currentTargetCell.x, m_currentTargetCell.y), sf::Vector2f(Map::TILE_SIZE, Map::TILE_SIZE));
-            screenPos += sf::Vector2f(400.0f, 300.0f); // Offset del mapa
+            sf::Vector2f screenPos = m_map.getTileTopLeft(m_currentTargetCell.x, m_currentTargetCell.y);
             
             // Color más brillante para la celda objetivo
             sf::Color targetColor = m_activeSpell->color;
@@ -478,4 +499,16 @@ void App::reloadMap() {
     std::cout << "=== RECARGANDO MAPA ===" << std::endl;
     loadMapFromFile(m_currentMapFile);
     std::cout << "=== FIN RECARGA ===" << std::endl;
+}
+
+float App::calculateVirtualScale() const {
+    const float VIRTUAL_WIDTH = 1280.0f;
+    const float VIRTUAL_HEIGHT = 720.0f;
+    
+    sf::Vector2u windowSize = m_window.getSize();
+    float scaleX = static_cast<float>(windowSize.x) / VIRTUAL_WIDTH;
+    float scaleY = static_cast<float>(windowSize.y) / VIRTUAL_HEIGHT;
+    
+    // Usar la escala más pequeña para mantener aspect ratio (letterboxing)
+    return std::min(scaleX, scaleY);
 }

@@ -28,6 +28,9 @@ public:
     // Configuración de ventana
     void setWindowSize(sf::Vector2u windowSize);
     
+    // Configuración de escala virtual
+    void setVirtualScale(float scale);
+    
 private:
     // Estadísticas
     PlayerStats m_playerStats;
@@ -37,6 +40,9 @@ private:
     
     // Dimensiones de ventana
     sf::Vector2u m_windowSize;
+    
+    // Escala virtual para responsive
+    float m_virtualScale;
     
     // Colores
     static const sf::Color HP_COLOR;
