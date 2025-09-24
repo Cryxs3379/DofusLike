@@ -74,14 +74,20 @@ Pawn::Pawn(sf::Vector2i startPosition)
 
 void Pawn::update(float deltaTime) {
     updateMovement(deltaTime);
+    if (m_useSprite) {
+        if (m_state == PawnState::Moving) {
+            m_anim.update(deltaTime);
+        } else {
+            m_anim.reset();
+        }
+    }
 }
 
 void Pawn::render(sf::RenderWindow& window, const Map& map) {
     updateScreenPosition(map);
     
     if (m_useSprite) {
-        // Actualizar animación
-        m_anim.update(0.016f); // ~60 FPS
+        // Aplicar el frame actual (la animación avanza en update cuando corresponde)
         m_anim.apply(m_sprite);
         
         m_sprite.setPosition(m_screenPosition + m_spriteOffset);
