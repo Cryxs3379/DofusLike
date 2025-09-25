@@ -16,6 +16,7 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
       m_hp(100),
       m_type(type),
       m_state(EntityState::Idle),
+      m_currentDirection(0),
       m_sprite(*Assets::getEmptyTexture()) {
     
     // Configurar círculo de fallback
@@ -25,50 +26,110 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
     m_entityShape.setOutlineThickness(2.0f);
     m_entityShape.setOrigin({8.0f, 8.0f});
     
-    // Intentar cargar sprite
-    std::string spritePath = (type == EntityType::Player) ? "assets/sprites/player.png" : "assets/sprites/enemy.png";
-    m_texture = Assets::getTexture(spritePath);
-    if (m_texture) {
-        m_sprite.setTexture(*m_texture);
+    // Cargar las 5 texturas de dirección
+    if (type == EntityType::Player) {
+        std::cout << "[Entity] Loading player sprites..." << std::endl;
+        m_textures[0] = Assets::getTexture("assets/sprites/player_idle.png");      // Idle
+        m_textures[1] = Assets::getTexture("assets/sprites/player_right.png");    // Derecha
+        m_textures[2] = Assets::getTexture("assets/sprites/player_left.png");     // Izquierda
+        m_textures[3] = Assets::getTexture("assets/sprites/player_forward.png");  // Adelante
+        m_textures[4] = Assets::getTexture("assets/sprites/player_back.png");     // Atrás
         
-        // 1) Rect completo por seguridad (SFML 3 a veces deja 1x1 por defecto)
-        m_sprite.setTextureRect(sf::IntRect({0,0}, {
-            static_cast<int>(m_texture->getSize().x),
-            static_cast<int>(m_texture->getSize().y)
-        }));
-        
-        // 2) Config de animación para spritesheet 720x330: 8 columnas, 3 filas -> 90x110 por frame
-        auto tex = m_texture->getSize();
-        if (tex.x == 720 && tex.y == 330) {
-            m_anim.columns = 8;
-            m_anim.frameSize = {90u, 110u};
-        } else {
-            // fallback: no animar, usar textura completa
-            m_anim.columns = 1;
-            m_anim.frameSize = {0u, 0u}; // hará que Animation::apply no toque el rect
+        for (int i = 0; i < 5; i++) {
+            std::cout << "[Entity] Texture " << i << ": " << (m_textures[i] ? "LOADED" : "FAILED") << std::endl;
         }
-        m_anim.row = 0;     // idle
+    } else {
+        // Para enemigos, usar sprites por defecto
+        std::cout << "[Entity] Loading enemy sprite..." << std::endl;
+        m_textures[0] = Assets::getTexture("assets/sprites/enemy.png");
+        std::cout << "[Entity] Enemy texture: " << (m_textures[0] ? "LOADED" : "FAILED") << std::endl;
+        m_textures[1] = m_textures[0];
+        m_textures[2] = m_textures[0];
+        m_textures[3] = m_textures[0];
+        m_textures[4] = m_textures[0];
+    }
+    
+    // Verificar si al menos una textura se cargó
+    bool hasTexture = false;
+    for (int i = 0; i < 5; i++) {
+        if (m_textures[i]) {
+            hasTexture = true;
+            break;
+        }
+    }
+    
+    if (hasTexture) {
+        // Configurar sprite con la textura idle por defecto
+        if (m_textures[0]) {
+            m_sprite.setTexture(*m_textures[0]);
+        } else {
+            // Si no hay idle, usar la primera disponible
+            for (int i = 1; i < 5; i++) {
+                if (m_textures[i]) {
+                    m_sprite.setTexture(*m_textures[i]);
+                    break;
+                }
+            }
+        }
+        
+        // Configurar animación para spritesheet 3x3
+        const sf::Texture& tex = m_sprite.getTexture();
+        auto texSize = tex.getSize();
+        std::cout << "[Entity] Texture size: " << texSize.x << "x" << texSize.y << std::endl;
+        
+        if (texSize.x == 288 && texSize.y == 288) { // 3x3 grid de 96x96
+            m_anim.columns = 3;
+            m_anim.frameSize = {96u, 96u};
+            std::cout << "[Entity] Detected 3x3 grid (96x96 frames)" << std::endl;
+        } else if (texSize.x == 96 && texSize.y == 96) { // 1 frame
+            m_anim.columns = 1;
+            m_anim.frameSize = {0u, 0u}; // Desactivar animación
+            std::cout << "[Entity] Detected single frame (96x96)" << std::endl;
+        } else if (texSize.x == 1024 && texSize.y == 1024) { // Sprites grandes del player
+            // Para sprites de 1024x1024, asumir que son 3x3 grid de ~341x341 frames
+            m_anim.columns = 3;
+            m_anim.frameSize = {texSize.x / 3, texSize.y / 3};
+            std::cout << "[Entity] Detected large 3x3 grid: " << m_anim.frameSize.x << "x" << m_anim.frameSize.y << " frames" << std::endl;
+        } else {
+            // Fallback para otros tamaños - intentar detectar automáticamente
+            if (texSize.x % 3 == 0 && texSize.y % 3 == 0) {
+                // Asumir 3x3 grid
+                m_anim.columns = 3;
+                m_anim.frameSize = {texSize.x / 3, texSize.y / 3};
+                std::cout << "[Entity] Auto-detected 3x3 grid: " << m_anim.frameSize.x << "x" << m_anim.frameSize.y << " frames" << std::endl;
+            } else {
+                m_anim.columns = 1;
+                m_anim.frameSize = {0u, 0u};
+                std::cout << "[Entity] Using single frame mode" << std::endl;
+            }
+        }
+        
+        m_anim.row = 0;
         m_anim.current = 0;
         m_anim.timer = 0.f;
-        m_anim.frameDuration = 0.12f; // un poco más fluida
+        m_anim.frameDuration = 0.12f;
         
-        // 3) El tamaño para origin/escala debe ser el DEL FRAME, no el de la textura completa
+        // Configurar origin y escala
         sf::Vector2i frameSize(static_cast<int>(m_anim.frameSize.x), static_cast<int>(m_anim.frameSize.y));
         if (frameSize.x == 0 || frameSize.y == 0) {
-            // Fallback: usar tamaño completo de textura
-            frameSize = sf::Vector2i(static_cast<int>(tex.x), static_cast<int>(tex.y));
+            frameSize = sf::Vector2i(static_cast<int>(texSize.x), static_cast<int>(texSize.y));
         }
         
-        m_sprite.setOrigin({ frameSize.x / 2.f, static_cast<float>(frameSize.y) - 4.f });
+        m_sprite.setOrigin({ frameSize.x / 2.f, static_cast<float>(frameSize.y) - 16.f });
         
-        // Escala: altura del frame al alto de la loseta aprox
-        const float targetHeight = Map::TILE_SIZE * 1.2f; // 48 si TILE_SIZE=40
+        const float targetHeight = Map::TILE_SIZE * 1.2f;
         float scale = targetHeight / static_cast<float>(frameSize.y);
         if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
+        
+        // Para sprites muy grandes (1024x1024), usar una escala más grande
+        if (scale < 0.1f) {
+            scale = 0.6f; // Escala mucho más grande para que sea bien visible
+            std::cout << "[Entity] Using larger scale for large sprite: " << scale << std::endl;
+        }
+        
         m_sprite.setScale({scale, scale});
         
-        // Offset para apoyar "en los pies"
-        m_spriteOffset = {0.f, -4.f};
+        m_spriteOffset = {0.f, -12.f}; // Ajustar para centrar mejor
         m_useSprite = true;
         
         std::cout << "[Entity] sprite ON size=" << frameSize.x << "x" << frameSize.y
@@ -218,7 +279,7 @@ void Entity::updateMovement(float deltaTime) {
         m_isMovingToTarget = false;
         m_state = EntityState::Idle;
         if (m_useSprite) {
-            m_anim.setDirection(0); // Volver a idle
+            setDirection(0); // Volver a idle
         }
         return;
     }
@@ -228,11 +289,16 @@ void Entity::updateMovement(float deltaTime) {
         sf::Vector2i nextPos = m_movementPath.front();
         sf::Vector2i direction = nextPos - m_currentPosition;
         
-        // Convertir dirección a índice de fila (1=up, 2=left, 3=down, 4=right)
-        if (direction.y < 0) m_anim.setDirection(1);      // Up
-        else if (direction.x < 0) m_anim.setDirection(2); // Left
-        else if (direction.y > 0) m_anim.setDirection(3); // Down
-        else if (direction.x > 0) m_anim.setDirection(4); // Right
+        int newDirection = 0;
+        if (direction.x > 0) newDirection = 1;      // Derecha
+        else if (direction.x < 0) newDirection = 2;  // Izquierda
+        else if (direction.y > 0) newDirection = 3; // Adelante
+        else if (direction.y < 0) newDirection = 4; // Atrás
+        
+        // Cambiar textura si cambió la dirección
+        if (newDirection != m_currentDirection) {
+            setDirection(newDirection);
+        }
     }
     
     m_movementTimer += deltaTime;
@@ -252,7 +318,7 @@ void Entity::updateMovement(float deltaTime) {
             m_isMovingToTarget = false;
             m_state = EntityState::Idle;
             if (m_useSprite) {
-                m_anim.setDirection(0); // Volver a idle
+                setDirection(0); // Volver a idle
             }
         }
     }
@@ -380,5 +446,16 @@ void Entity::applyEffect(const Spell& spell, Entity& target) {
         // Por ahora, usaremos takeDamage con valor negativo
         target.takeDamage(-spell.value);
         std::cout << spell.name << " cura " << spell.value << " HP. HP objetivo: " << target.getHP() << std::endl;
+    }
+}
+
+void Entity::setDirection(int direction) {
+    if (direction < 0 || direction > 4) return;
+    
+    m_currentDirection = direction;
+    
+    if (m_useSprite && m_textures[direction]) {
+        m_sprite.setTexture(*m_textures[direction]);
+        m_anim.setDirection(0); // Resetear animación
     }
 }
