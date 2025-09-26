@@ -37,6 +37,51 @@ std::vector<sf::Vector2i> Pathfinding::getReachableTiles(const Map& map, sf::Vec
     return reachableTiles;
 }
 
+std::vector<sf::Vector2i> Pathfinding::getReachableTiles(const Map& map, sf::Vector2i startPos, int maxCost, const std::vector<sf::Vector2i>& excludedPositions) {
+    std::vector<sf::Vector2i> reachableTiles;
+    std::unordered_map<sf::Vector2i, int, Vec2Hash> visited;
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> queue;
+    
+    queue.push(Node(startPos, 0));
+    visited[startPos] = 0;
+    
+    while (!queue.empty()) {
+        Node current = queue.top();
+        queue.pop();
+        
+        if (current.cost > maxCost) continue;
+        
+        reachableTiles.push_back(current.position);
+        
+        for (auto neighbor : getNeighbors(current.position)) {
+            if (!map.isValidPosition(neighbor.x, neighbor.y)) continue;
+            if (map.isBlocked(neighbor.x, neighbor.y)) continue;
+            
+            // Verificar si la posición está excluida
+            bool isExcluded = false;
+            for (const auto& excludedPos : excludedPositions) {
+                if (neighbor == excludedPos) {
+                    isExcluded = true;
+                    break;
+                }
+            }
+            if (isExcluded) continue;
+            
+            int newCost = current.cost + getMovementCost(map, current.position, neighbor);
+            
+            if (newCost <= maxCost) {
+                auto it = visited.find(neighbor);
+                if (it == visited.end() || newCost < it->second) {
+                    visited[neighbor] = newCost;
+                    queue.push(Node(neighbor, newCost));
+                }
+            }
+        }
+    }
+    
+    return reachableTiles;
+}
+
 std::vector<sf::Vector2i> Pathfinding::findPath(const Map& map, sf::Vector2i start, sf::Vector2i end) {
     // Algoritmo A* con heurística Manhattan
     std::priority_queue<AStarNode, std::vector<AStarNode>, std::greater<AStarNode>> openSet;

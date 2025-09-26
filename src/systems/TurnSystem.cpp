@@ -34,7 +34,14 @@ void TurnSystem::update(float deltaTime, const Map& map) {
         
         // Si es el turno del enemigo y no se está moviendo, ejecutar IA
         if (isEnemyTurn() && !m_entities[m_currentEntityIndex]->isMoving()) {
-            executeEnemyAI(map);
+            // Verificar si el enemy terminó su animación de combate
+            if (m_entities[m_currentEntityIndex]->isPlayingCombatAnimation()) {
+                // Esperar a que termine la animación
+                std::cout << "Enemy en animación de combate, esperando..." << std::endl;
+            } else {
+                // Ejecutar IA normal
+                executeEnemyAI(map);
+            }
         }
     }
 }
@@ -94,19 +101,30 @@ void TurnSystem::executeEnemyAI(const Map& map) {
         return;
     }
     
+    // Verificar si ya está en animación de combate
+    if (enemy->isPlayingCombatAnimation()) {
+        // Esperar a que termine la animación de combate
+        std::cout << "Enemy esperando a que termine la animación de combate..." << std::endl;
+        return;
+    }
+    
     // Verificar si puede atacar usando el nuevo sistema de LoS
     if (enemy->getRemainingPA() >= 3 && enemy->canCastSpell(player->getPosition(), 1, 3, map)) {
         // Intentar atacar
         if (enemy->tryCastStrike(player->getPosition(), *player)) {
             std::cout << "Enemy ataca al Player!" << std::endl;
-            endCurrentTurn();
+            // NO terminar el turno inmediatamente, esperar a que termine la animación
             return;
         }
     }
     
     // Si no puede atacar, moverse hacia el player
+    std::cout << "Enemy PA: " << enemy->getRemainingPA() << ", PM: " << enemy->getRemainingPM() << std::endl;
     if (enemy->getRemainingPM() > 0) {
-        std::vector<sf::Vector2i> reachableTiles = enemy->getReachableTiles(map);
+        // Excluir la posición del player de las celdas alcanzables
+        std::vector<sf::Vector2i> excludedPositions = {player->getPosition()};
+        std::vector<sf::Vector2i> reachableTiles = Pathfinding::getReachableTiles(map, enemy->getPosition(), enemy->getRemainingPM(), excludedPositions);
+        std::cout << "Enemy celdas alcanzables (excluyendo player): " << reachableTiles.size() << std::endl;
         
         // Encontrar la casilla más cercana al player
         sf::Vector2i bestTile = enemy->getPosition();
@@ -130,6 +148,7 @@ void TurnSystem::executeEnemyAI(const Map& map) {
         }
     } else {
         // Sin PM, terminar turno
+        std::cout << "Enemy sin PM, terminando turno..." << std::endl;
         endCurrentTurn();
     }
 }

@@ -52,16 +52,12 @@ Pawn::Pawn(sf::Vector2i startPosition)
             frameSize = sf::Vector2i(static_cast<int>(tex.x), static_cast<int>(tex.y));
         }
         
-        m_sprite.setOrigin({ frameSize.x / 2.f, static_cast<float>(frameSize.y) - 4.f });
-        
-        // Escala: altura del frame al alto de la loseta aprox
-        const float targetHeight = Map::TILE_SIZE * 1.2f; // 48 si TILE_SIZE=40
-        float scale = targetHeight / static_cast<float>(frameSize.y);
+        m_sprite.setOrigin({ frameSize.x * 0.5f, static_cast<float>(frameSize.y) - FOOT_PADDING });
+        const float targetHeight = Map::TILE_SIZE * kTileHeightMultiplier;
+        float scale = (targetHeight / static_cast<float>(frameSize.y)) * 0.9f;
         if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
         m_sprite.setScale({scale, scale});
-        
-        // Offset para apoyar "en los pies"
-        m_spriteOffset = {0.f, -4.f};
+        m_spriteOffset = {-10.f, 0.f};
         m_useSprite = true;
         
         std::cout << "[Pawn] sprite ON size=" << frameSize.x << "x" << frameSize.y
@@ -90,7 +86,8 @@ void Pawn::render(sf::RenderWindow& window, const Map& map) {
         // Aplicar el frame actual (la animación avanza en update cuando corresponde)
         m_anim.apply(m_sprite);
         
-        m_sprite.setPosition(m_screenPosition + m_spriteOffset);
+        const sf::Vector2f drawPos = m_screenPosition + m_spriteOffset;
+        m_sprite.setPosition({std::round(drawPos.x), std::round(drawPos.y)});
         window.draw(m_sprite);
     } else {
         // Fallback al círculo

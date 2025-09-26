@@ -34,6 +34,10 @@ public:
     int stepsRemainingInQueue() const { return static_cast<int>(m_movementPath.size()); }
     
 private:
+    // Constantes para centrado y escalado
+    static constexpr float kTileHeightMultiplier = 2.6f;
+    static constexpr float FOOT_PADDING = 12.0f;
+    
     sf::Vector2i m_currentPosition;
     sf::Vector2f m_screenPosition;
     std::vector<sf::Vector2i> m_movementPath;

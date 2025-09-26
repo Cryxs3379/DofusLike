@@ -57,6 +57,7 @@ public:
     static constexpr int MAX_MOVEMENT_POINTS = 3;
     
     static std::vector<sf::Vector2i> getReachableTiles(const Map& map, sf::Vector2i startPos, int maxCost);
+    static std::vector<sf::Vector2i> getReachableTiles(const Map& map, sf::Vector2i startPos, int maxCost, const std::vector<sf::Vector2i>& excludedPositions);
     static std::vector<sf::Vector2i> findPath(const Map& map, sf::Vector2i start, sf::Vector2i end);
     
 private:

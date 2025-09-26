@@ -376,6 +376,16 @@ void App::tryCastSpell(sf::Vector2i targetCell) {
         // Verificar si hay un enemigo en la celda objetivo
         if (m_enemy.getPosition() == targetCell) {
             std::cout << "*** LANZANDO " << m_activeSpell->name << " AL ENEMIGO ***" << std::endl;
+            
+            // Iniciar animación de combate según el hechizo
+            if (m_activeSpell->name == "Golpe") {
+                m_player.startCombatAnimation(0); // ataqueespadaa.png
+            } else if (m_activeSpell->name == "Flecha") {
+                m_player.startCombatAnimation(1); // ataquearco.png
+            } else if (m_activeSpell->name == "Curar") {
+                m_player.startCombatAnimation(2); // heal.png
+            }
+            
             bool success = m_player.castSpell(*m_activeSpell, targetCell, m_map, m_enemy);
             if (success) {
                 std::cout << "Hechizo lanzado exitosamente!" << std::endl;

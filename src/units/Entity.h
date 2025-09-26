@@ -62,7 +62,16 @@ public:
     std::vector<sf::Vector2i> getCastableCells(const Map& map, int minRange, int maxRange) const;
     void castSpell(sf::Vector2i targetCell, int minRange, int maxRange, const Map& map, int paCost);
     
+    // Sistema de animaciones de combate
+    void startCombatAnimation(int animationType); // 0=arco, 1=ataquearco, 2=heal
+    bool isPlayingCombatAnimation() const { return m_currentCombatAnimation >= 0; }
+    void stopCombatAnimation();
+    
 private:
+    // Constantes para centrado y escalado
+    static constexpr float kTileHeightMultiplier = 2.6f;
+    static constexpr float FOOT_PADDING = 12.0f;
+    
     sf::Vector2i m_currentPosition;
     sf::Vector2f m_screenPosition;
     std::vector<sf::Vector2i> m_movementPath;
@@ -76,11 +85,18 @@ private:
     // Sistema de sprites con múltiples direcciones
     bool m_useSprite = false;
     sf::Sprite m_sprite; // Inicializar sin textura
+    sf::Texture* m_texture = nullptr; // Textura principal (spritesheet)
     sf::Texture* m_textures[5]; // 0=idle, 1=right, 2=left, 3=forward, 4=back
     Animation m_anim;
     sf::Vector2f m_spriteOffset = {0.f, 0.f}; // para ajustar apoyo en losetas
     sf::Vector2f m_spriteScale = {1.f, 1.f};
-    int m_currentDirection = 0; // 0=idle, 1=right, 2=left, 3=forward, 4=back
+    int m_currentDirection = 0; // 0=idle, 1=up, 2=left, 3=down, 4=right
+    
+    // Sistema de animaciones de combate
+    sf::Texture* m_combatTextures[3]; // 0=arco, 1=ataquearco, 2=heal
+    int m_currentCombatAnimation = -1; // -1=none, 0=arco, 1=ataquearco, 2=heal
+    float m_combatAnimationTimer = 0.f;
+    static constexpr float COMBAT_ANIMATION_DURATION = 1.5f; // Duración de animación de combate
     
     // Sistema de recursos
     int m_totalPM;

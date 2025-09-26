@@ -26,27 +26,45 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
     m_entityShape.setOutlineThickness(2.0f);
     m_entityShape.setOrigin({8.0f, 8.0f});
     
-    // Cargar las 5 texturas de dirección
-    if (type == EntityType::Player) {
-        std::cout << "[Entity] Loading player sprites..." << std::endl;
-        m_textures[0] = Assets::getTexture("assets/sprites/player_idle.png");      // Idle
-        m_textures[1] = Assets::getTexture("assets/sprites/player_right.png");    // Derecha
-        m_textures[2] = Assets::getTexture("assets/sprites/player_left.png");     // Izquierda
-        m_textures[3] = Assets::getTexture("assets/sprites/player_forward.png");  // Adelante
-        m_textures[4] = Assets::getTexture("assets/sprites/player_back.png");     // Atrás
+    // Cargar el mismo spritesheet para player y enemy para consistencia de tamaño
+    std::cout << "[Entity] Loading sprites for " << (type == EntityType::Player ? "player" : "enemy") << "..." << std::endl;
+    m_texture = Assets::getTexture("assets/sprites/player.png");
+    
+    if (m_texture) {
+        // Usar el mismo sprite para todas las direcciones (el spritesheet tiene todas las animaciones)
+        for (int i = 0; i < 5; i++) {
+            m_textures[i] = m_texture;
+        }
+        std::cout << "[Entity] Main texture: " << (m_texture ? "LOADED" : "FAILED") << std::endl;
+    } else {
+        // Fallback a sprites individuales si no se encuentra el spritesheet
+        if (type == EntityType::Player) {
+            m_textures[0] = Assets::getTexture("assets/sprites/player_idle.png");      // Idle
+            m_textures[1] = Assets::getTexture("assets/sprites/player_right.png");    // Derecha
+            m_textures[2] = Assets::getTexture("assets/sprites/player_left.png");     // Izquierda
+            m_textures[3] = Assets::getTexture("assets/sprites/player_forward.png");  // Adelante
+            m_textures[4] = Assets::getTexture("assets/sprites/player_back.png");     // Atrás
+        } else {
+            // Para enemigos, usar los mismos sprites individuales que el player
+            m_textures[0] = Assets::getTexture("assets/sprites/player_idle.png");
+            m_textures[1] = Assets::getTexture("assets/sprites/player_right.png");    // Derecha
+            m_textures[2] = Assets::getTexture("assets/sprites/player_left.png");     // Izquierda
+            m_textures[3] = Assets::getTexture("assets/sprites/player_forward.png");  // Adelante
+            m_textures[4] = Assets::getTexture("assets/sprites/player_back.png");     // Atr�s
+        }
         
         for (int i = 0; i < 5; i++) {
             std::cout << "[Entity] Texture " << i << ": " << (m_textures[i] ? "LOADED" : "FAILED") << std::endl;
         }
-    } else {
-        // Para enemigos, usar sprites por defecto
-        std::cout << "[Entity] Loading enemy sprite..." << std::endl;
-        m_textures[0] = Assets::getTexture("assets/sprites/enemy.png");
-        std::cout << "[Entity] Enemy texture: " << (m_textures[0] ? "LOADED" : "FAILED") << std::endl;
-        m_textures[1] = m_textures[0];
-        m_textures[2] = m_textures[0];
-        m_textures[3] = m_textures[0];
-        m_textures[4] = m_textures[0];
+    }
+    
+    // Cargar animaciones de combate (para ambos player y enemy)
+    m_combatTextures[0] = Assets::getTexture("assets/sprites/ataqueespadaa.png"); // Ataque con espada
+    m_combatTextures[1] = Assets::getTexture("assets/sprites/ataquearco.png");    // Ataque con arco
+    m_combatTextures[2] = Assets::getTexture("assets/sprites/heal.png");          // Curación
+    
+    for (int i = 0; i < 3; i++) {
+        std::cout << "[Entity] Combat Texture " << i << ": " << (m_combatTextures[i] ? "LOADED" : "FAILED") << std::endl;
     }
     
     // Verificar si al menos una textura se cargó
@@ -72,12 +90,23 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
             }
         }
         
-        // Configurar animación para spritesheet 3x3
+        // Configurar animación para spritesheet (usar la misma lógica que Pawn)
         const sf::Texture& tex = m_sprite.getTexture();
         auto texSize = tex.getSize();
         std::cout << "[Entity] Texture size: " << texSize.x << "x" << texSize.y << std::endl;
         
-        if (texSize.x == 288 && texSize.y == 288) { // 3x3 grid de 96x96
+        // Usar la misma lógica de detección que Pawn.cpp
+        if (texSize.x == 720 && texSize.y == 330) {
+            // Spritesheet del player: 8 columnas, 3 filas -> 90x110 por frame
+            m_anim.columns = 8;
+            m_anim.frameSize = {90u, 110u};
+            std::cout << "[Entity] Detected player spritesheet (8x3 grid, 90x110 frames)" << std::endl;
+        } else if (texSize.x == 1024 && texSize.y == 1024) {
+            // Sprites de 1024x1024 organizados en grid 3x3 -> 341x341 por frame
+            m_anim.columns = 3;
+            m_anim.frameSize = {texSize.x / 3, texSize.y / 3}; // 341x341
+            std::cout << "[Entity] Detected 3x3 grid (1024x1024 -> 341x341 frames)" << std::endl;
+        } else if (texSize.x == 288 && texSize.y == 288) { // 3x3 grid de 96x96
             m_anim.columns = 3;
             m_anim.frameSize = {96u, 96u};
             std::cout << "[Entity] Detected 3x3 grid (96x96 frames)" << std::endl;
@@ -85,23 +114,11 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
             m_anim.columns = 1;
             m_anim.frameSize = {0u, 0u}; // Desactivar animación
             std::cout << "[Entity] Detected single frame (96x96)" << std::endl;
-        } else if (texSize.x == 1024 && texSize.y == 1024) { // Sprites grandes del player
-            // Para sprites de 1024x1024, asumir que son 3x3 grid de ~341x341 frames
-            m_anim.columns = 3;
-            m_anim.frameSize = {texSize.x / 3, texSize.y / 3};
-            std::cout << "[Entity] Detected large 3x3 grid: " << m_anim.frameSize.x << "x" << m_anim.frameSize.y << " frames" << std::endl;
         } else {
-            // Fallback para otros tamaños - intentar detectar automáticamente
-            if (texSize.x % 3 == 0 && texSize.y % 3 == 0) {
-                // Asumir 3x3 grid
-                m_anim.columns = 3;
-                m_anim.frameSize = {texSize.x / 3, texSize.y / 3};
-                std::cout << "[Entity] Auto-detected 3x3 grid: " << m_anim.frameSize.x << "x" << m_anim.frameSize.y << " frames" << std::endl;
-            } else {
-                m_anim.columns = 1;
-                m_anim.frameSize = {0u, 0u};
-                std::cout << "[Entity] Using single frame mode" << std::endl;
-            }
+            // Fallback: no animar, usar textura completa
+            m_anim.columns = 1;
+            m_anim.frameSize = {0u, 0u}; // hará que Animation::apply no toque el rect
+            std::cout << "[Entity] Using single frame mode for size " << texSize.x << "x" << texSize.y << std::endl;
         }
         
         m_anim.row = 0;
@@ -109,27 +126,33 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
         m_anim.timer = 0.f;
         m_anim.frameDuration = 0.12f;
         
-        // Configurar origin y escala
+        // Configurar origin y escala (usar la misma lógica que Pawn.cpp)
         sf::Vector2i frameSize(static_cast<int>(m_anim.frameSize.x), static_cast<int>(m_anim.frameSize.y));
         if (frameSize.x == 0 || frameSize.y == 0) {
+            // Fallback: usar tamaño completo de textura
             frameSize = sf::Vector2i(static_cast<int>(texSize.x), static_cast<int>(texSize.y));
         }
         
-        m_sprite.setOrigin({ frameSize.x / 2.f, static_cast<float>(frameSize.y) - 16.f });
+        // Origin en los pies (bottom-center) con el mismo padding que Pawn
+        m_sprite.setOrigin({ frameSize.x * 0.5f, static_cast<float>(frameSize.y) - FOOT_PADDING });
+
+        // Escala: ajustar según el tamaño de la textura
+        const float targetHeight = Map::TILE_SIZE * kTileHeightMultiplier;
+        float scale;
         
-        const float targetHeight = Map::TILE_SIZE * 1.2f;
-        float scale = targetHeight / static_cast<float>(frameSize.y);
-        if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
-        
-        // Para sprites muy grandes (1024x1024), usar una escala más grande
-        if (scale < 0.1f) {
-            scale = 0.6f; // Escala mucho más grande para que sea bien visible
-            std::cout << "[Entity] Using larger scale for large sprite: " << scale << std::endl;
+        if (texSize.x == 1024 && texSize.y == 1024) {
+            // Para sprites de 1024x1024 con grid 3x3, usar el tamaño del frame
+            scale = (targetHeight / static_cast<float>(frameSize.y)) * 0.9f; // Usar frameSize, no texSize
+        } else {
+            // Para otros tamaños, usar la fórmula original
+            scale = (targetHeight / static_cast<float>(frameSize.y)) * 0.9f;
         }
         
+        if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
         m_sprite.setScale({scale, scale});
-        
-        m_spriteOffset = {0.f, -12.f}; // Ajustar para centrar mejor
+
+        // No usar offset adicional para centrar correctamente en la loseta
+        m_spriteOffset = {-14.f, 0.f};
         m_useSprite = true;
         
         std::cout << "[Entity] sprite ON size=" << frameSize.x << "x" << frameSize.y
@@ -142,7 +165,18 @@ Entity::Entity(sf::Vector2i startPosition, EntityType type)
 
 void Entity::update(float deltaTime) {
     updateMovement(deltaTime);
-    if (m_useSprite) {
+    
+    // Manejar animaciones de combate
+    if (m_currentCombatAnimation >= 0) {
+        m_combatAnimationTimer += deltaTime;
+        if (m_combatAnimationTimer >= COMBAT_ANIMATION_DURATION) {
+            stopCombatAnimation();
+        } else {
+            // Actualizar animación de combate
+            m_anim.update(deltaTime);
+        }
+    } else if (m_useSprite) {
+        // Animación normal de movimiento
         if (m_state == EntityState::Moving) {
             m_anim.update(deltaTime);
         } else {
@@ -158,7 +192,18 @@ void Entity::render(sf::RenderWindow& window, const Map& map) {
         // Aplicar el frame actual (la animación avanza en update cuando corresponde)
         m_anim.apply(m_sprite);
         
-        m_sprite.setPosition(m_screenPosition + m_spriteOffset);
+        const sf::Vector2f drawPos = m_screenPosition + m_spriteOffset; // ahora offset = {0,0}
+        m_sprite.setPosition({std::round(drawPos.x), std::round(drawPos.y)});
+        
+        // Debug para animaciones de combate
+        if (m_currentCombatAnimation >= 0) {
+            static int debugCounter = 0;
+            if (debugCounter % 60 == 0) { // Cada 60 frames (1 segundo a 60fps)
+                std::cout << "[Entity] Combat animation " << m_currentCombatAnimation << " - Frame: " << m_anim.current << ", Row: " << m_anim.row << ", Timer: " << m_combatAnimationTimer << std::endl;
+            }
+            debugCounter++;
+        }
+        
         window.draw(m_sprite);
     } else {
         // Fallback al círculo
@@ -249,8 +294,15 @@ bool Entity::tryCastStrike(sf::Vector2i targetCell, Entity& target) {
     
     // Ejecutar el golpe
     std::cout << "Golpe exitoso!" << std::endl;
+    
+    // Iniciar animación de combate para el enemy
+    startCombatAnimation(0); // ataqueespadaa.png
+    
     target.takeDamage(20);
     consumePA(3);
+    
+    // Asegurar que el enemy vuelva al estado idle después del ataque
+    setDirection(0); // Idle
     
     return true;
 }
@@ -284,18 +336,19 @@ void Entity::updateMovement(float deltaTime) {
         return;
     }
     
-    // Determinar dirección de movimiento para animación
+    // Determinar dirección de movimiento para animación (usar la misma lógica que Pawn)
     if (m_useSprite && !m_movementPath.empty()) {
         sf::Vector2i nextPos = m_movementPath.front();
         sf::Vector2i direction = nextPos - m_currentPosition;
         
-        int newDirection = 0;
-        if (direction.x > 0) newDirection = 1;      // Derecha
-        else if (direction.x < 0) newDirection = 2;  // Izquierda
-        else if (direction.y > 0) newDirection = 3; // Adelante
-        else if (direction.y < 0) newDirection = 4; // Atrás
+        // Convertir dirección a índice de fila (igual que Pawn: 1=up, 2=left, 3=down, 4=right)
+        int newDirection = 0; // idle
+        if (direction.y < 0) newDirection = 1;      // Up
+        else if (direction.x < 0) newDirection = 2; // Left
+        else if (direction.y > 0) newDirection = 3; // Down
+        else if (direction.x > 0) newDirection = 4; // Right
         
-        // Cambiar textura si cambió la dirección
+        // Cambiar dirección si cambió
         if (newDirection != m_currentDirection) {
             setDirection(newDirection);
         }
@@ -454,8 +507,106 @@ void Entity::setDirection(int direction) {
     
     m_currentDirection = direction;
     
-    if (m_useSprite && m_textures[direction]) {
-        m_sprite.setTexture(*m_textures[direction]);
-        m_anim.setDirection(0); // Resetear animación
+    // No cambiar textura si estamos en animación de combate
+    if (m_currentCombatAnimation >= 0) {
+        return;
+    }
+    
+    if (m_useSprite) {
+        // Si tenemos el spritesheet principal, usar animación por filas
+        if (m_texture) {
+            // Mapear dirección a fila del spritesheet 3x3
+            // 0=idle, 1=up, 2=left, 3=down, 4=right
+            int row = 0; // idle por defecto
+            if (direction == 1) row = 0;      // Up (fila 0)
+            else if (direction == 2) row = 1; // Left (fila 1) 
+            else if (direction == 3) row = 0; // Down (fila 0)
+            else if (direction == 4) row = 2; // Right (fila 2)
+            
+            m_anim.setDirection(row);
+        } else {
+            // Fallback: usar texturas separadas
+            if (m_textures[direction]) {
+                m_sprite.setTexture(*m_textures[direction]);
+                m_anim.setDirection(0); // Resetear animación
+            }
+        }
+    }
+}
+
+// Implementación de métodos de animaciones de combate
+void Entity::startCombatAnimation(int animationType) {
+    if (animationType >= 0 && animationType < 3 && m_combatTextures[animationType]) {
+        m_currentCombatAnimation = animationType;
+        m_combatAnimationTimer = 0.f;
+        
+        // Configurar el sprite para la animación de combate
+        m_sprite.setTexture(*m_combatTextures[animationType]);
+        
+        // Configurar la animación para spritesheet 3x3
+        m_anim.frameSize = sf::Vector2u(341, 341); // Tamaño de frame para 1024x1024 / 3
+        m_anim.columns = 3;
+        m_anim.row = 0; // Empezar en la primera fila
+        m_anim.current = 0;
+        m_anim.timer = 0.f;
+        m_anim.frameDuration = 0.15f; // 150ms por frame (más rápido)
+        
+        // Asegurar que el sprite esté visible
+        m_useSprite = true;
+        
+        // Aplicar inmediatamente el primer frame
+        m_anim.apply(m_sprite);
+        
+        std::cout << "[Entity] Started combat animation: " << animationType << " (texture: " << (m_combatTextures[animationType] ? "OK" : "NULL") << ")" << std::endl;
+    } else {
+        std::cout << "[Entity] ERROR: Cannot start combat animation " << animationType << " (texture: " << (m_combatTextures[animationType] ? "OK" : "NULL") << ")" << std::endl;
+    }
+}
+
+void Entity::stopCombatAnimation() {
+    if (m_currentCombatAnimation >= 0) {
+        std::cout << "[Entity] Stopped combat animation: " << m_currentCombatAnimation << std::endl;
+        m_currentCombatAnimation = -1;
+        m_combatAnimationTimer = 0.f;
+        
+        // Volver a la textura de movimiento normal
+        // Asegurar que tenemos una dirección válida
+        if (m_currentDirection < 0 || m_currentDirection > 4) {
+            m_currentDirection = 0; // Idle por defecto
+            std::cout << "[Entity] Reset direction to idle (0)" << std::endl;
+        }
+        
+        if (m_textures[m_currentDirection]) {
+            m_sprite.setTexture(*m_textures[m_currentDirection]);
+            std::cout << "[Entity] Restored movement texture for direction: " << m_currentDirection << std::endl;
+        } else {
+            std::cout << "[Entity] ERROR: No movement texture found for direction: " << m_currentDirection << std::endl;
+            // Fallback a la primera textura disponible
+            for (int i = 0; i < 5; i++) {
+                if (m_textures[i]) {
+                    m_sprite.setTexture(*m_textures[i]);
+                    m_currentDirection = i;
+                    std::cout << "[Entity] Fallback to texture " << i << std::endl;
+                    break;
+                }
+            }
+        }
+        
+        // Resetear animación a movimiento normal (1024x1024 sprites)
+        m_anim.frameSize = sf::Vector2u(341, 341); // Tamaño correcto para 1024x1024 / 3
+        m_anim.columns = 3;
+        m_anim.row = 0;
+        m_anim.current = 0;
+        m_anim.timer = 0.f;
+        m_anim.frameDuration = 0.2f;
+        
+        // Asegurar que el sprite esté visible
+        m_useSprite = true;
+        std::cout << "[Entity] Animation reset to movement mode" << std::endl;
+        
+        // Si es el enemy, marcar que terminó su turno de combate
+        if (m_type == EntityType::Enemy) {
+            std::cout << "[Entity] Enemy terminó animación de combate, listo para terminar turno" << std::endl;
+        }
     }
 }
