@@ -1,0 +1,10 @@
+^C:\USERS\PTRUJILLO\DESKTOP\TRUJILLO\PROYECTOSCRYXS\DOFUSLIKE\BUILD\CMAKEFILES\6EA92AB3C8A61F1EFFC796030EC9D8C0\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/PTRUJILLO/Desktop/Trujillo/ProyectosCryxs/DofusLike -BC:/Users/PTRUJILLO/Desktop/Trujillo/ProyectosCryxs/DofusLike/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/PTRUJILLO/Desktop/Trujillo/ProyectosCryxs/DofusLike/build/DofusLikeProto.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

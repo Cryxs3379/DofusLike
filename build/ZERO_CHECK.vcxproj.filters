@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\PTRUJILLO\Desktop\Trujillo\ProyectosCryxs\DofusLike\build\CMakeFiles\6ea92ab3c8a61f1effc796030ec9d8c0\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{B22CC420-C081-36A1-B9B0-C92273802000}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,219 @@
+#include "units/Pawn.h"
+#include <algorithm>
+#include <iostream>
+
+// Flag global para diagnóstico - cambiar a true para ver círculos en lugar de sprites
+bool Pawn::FORCE_DEBUG_CIRCLE = false;
+
+Pawn::Pawn(sf::Vector2i startPosition) 
+    : m_currentPosition(startPosition), 
+      m_screenPosition(0, 0),
+      m_movementTimer(0.0f),
+      m_isMovingToTarget(false),
+      m_totalPM(3),
+      m_remainingPM(3),
+      m_state(PawnState::Idle),
+      m_sprite(*Assets::getEmptyTexture()) {
+    
+    // Configurar círculo de fallback (radio más grande para diagnóstico)
+    m_pawnShape.setRadius(FORCE_DEBUG_CIRCLE ? 16.0f : 8.0f);
+    m_pawnShape.setFillColor(sf::Color::Blue);
+    m_pawnShape.setOutlineColor(sf::Color::White);
+    m_pawnShape.setOutlineThickness(2.0f);
+    m_pawnShape.setOrigin({m_pawnShape.getRadius(), m_pawnShape.getRadius()});
+    
+    // Si FORCE_DEBUG_CIRCLE está activo, usar solo el círculo
+    if (FORCE_DEBUG_CIRCLE) {
+        std::cout << "[Pawn] FORCE_DEBUG_CIRCLE=true, usando círculo de radio 16px (sin sprites)" << std::endl;
+        m_useSprite = false;
+        return;
+    }
+    
+    // Intentar cargar sprite
+    std::cout << "[Pawn] Loading sprites..." << std::endl;
+    m_texture = Assets::getTexture("assets/sprites/player.png");
+    if (m_texture) {
+        m_sprite.setTexture(*m_texture);
+        
+        // 1) Rect completo por seguridad (SFML 3 a veces deja 1x1 por defecto)
+        m_sprite.setTextureRect(sf::IntRect({0,0}, {
+            static_cast<int>(m_texture->getSize().x),
+            static_cast<int>(m_texture->getSize().y)
+        }));
+        
+        // 2) Config de animación para spritesheet 720x330: 8 columnas, 3 filas -> 90x110 por frame
+        auto tex = m_texture->getSize();
+        if (tex.x == 720 && tex.y == 330) {
+            m_anim.columns = 8;
+            m_anim.frameSize = {90u, 110u};
+        } else {
+            // fallback: no animar, usar textura completa
+            m_anim.columns = 1;
+            m_anim.frameSize = {0u, 0u}; // hará que Animation::apply no toque el rect
+        }
+        m_anim.row = 0;     // idle
+        m_anim.current = 0;
+        m_anim.timer = 0.f;
+        m_anim.frameDuration = 0.12f; // un poco más fluida
+        
+        // 3) El tamaño para origin/escala debe ser el DEL FRAME, no el de la textura completa
+        sf::Vector2i frameSize(static_cast<int>(m_anim.frameSize.x), static_cast<int>(m_anim.frameSize.y));
+        if (frameSize.x == 0 || frameSize.y == 0) {
+            // Fallback: usar tamaño completo de textura
+            frameSize = sf::Vector2i(static_cast<int>(tex.x), static_cast<int>(tex.y));
+        }
+        
+        m_sprite.setOrigin({ frameSize.x * 0.5f, static_cast<float>(frameSize.y) - FOOT_PADDING });
+        const float targetHeight = Map::TILE_SIZE * kTileHeightMultiplier;
+        float scale = (targetHeight / static_cast<float>(frameSize.y)) * 0.9f;
+        if (!std::isfinite(scale) || scale <= 0.f) scale = 1.f;
+        m_sprite.setScale({scale, scale});
+        m_spriteOffset = {-10.f, 0.f};
+        m_useSprite = true;
+        
+        std::cout << "[Pawn] sprite ON size=" << frameSize.x << "x" << frameSize.y
+                  << " scale=" << scale << " anim=" << m_anim.columns << "x" << m_anim.frameSize.x << "x" << m_anim.frameSize.y << std::endl;
+    } else {
+        m_useSprite = false;
+        std::cout << "[Pawn] sprite OFF (fallback)" << std::endl;
+    }
+}
+
+void Pawn::update(float deltaTime) {
+    updateMovement(deltaTime);
+    if (m_useSprite) {
+        if (m_state == PawnState::Moving) {
+            m_anim.update(deltaTime);
+        } else {
+            m_anim.reset();
+        }
+    }
+}
+
+void Pawn::render(sf::RenderWindow& window, const Map& map) {
+    updateScreenPosition(map);
+    
+    if (m_useSprite) {
+        // Aplicar el frame actual (la animación avanza en update cuando corresponde)
+        m_anim.apply(m_sprite);
+        
+        const sf::Vector2f drawPos = m_screenPosition + m_spriteOffset;
+        m_sprite.setPosition({std::round(drawPos.x), std::round(drawPos.y)});
+        window.draw(m_sprite);
+    } else {
+        // Fallback al círculo
+        m_pawnShape.setPosition(m_screenPosition);
+        window.draw(m_pawnShape);
+    }
+}
+
+void Pawn::moveTo(sf::Vector2i targetPosition, const Map& map) {
+    if (targetPosition == m_currentPosition || m_state == PawnState::Moving) return;
+    
+    std::vector<sf::Vector2i> path = Pathfinding::findPath(map, m_currentPosition, targetPosition);
+    if (!path.empty()) {
+        // Eliminar el primer nodo si es igual a la posición actual
+        if (!path.empty() && path.front() == m_currentPosition) {
+            path.erase(path.begin());
+        }
+        
+        // Recortar el camino según los PM disponibles
+        int maxSteps = m_remainingPM;
+        if (static_cast<int>(path.size()) > maxSteps) {
+            path.resize(maxSteps);
+        }
+        
+        if (!path.empty()) {
+            m_movementPath = path;
+            m_movementTimer = 0.0f;
+            m_isMovingToTarget = true;
+            m_state = PawnState::Moving;
+        }
+    }
+}
+
+void Pawn::setPosition(sf::Vector2i position) {
+    m_currentPosition = position;
+    m_movementPath.clear();
+    m_isMovingToTarget = false;
+    m_state = PawnState::Idle;
+}
+
+std::vector<sf::Vector2i> Pawn::getReachableTiles(const Map& map) const {
+    return Pathfinding::getReachableTiles(map, m_currentPosition, m_remainingPM);
+}
+
+void Pawn::endTurn() {
+    m_remainingPM = m_totalPM;
+    m_state = PawnState::Idle;
+}
+
+void Pawn::updateMovement(float deltaTime) {
+    if (m_movementPath.empty()) {
+        m_isMovingToTarget = false;
+        m_state = PawnState::Idle;
+        if (m_useSprite) {
+            m_anim.setDirection(0); // Volver a idle
+        }
+        return;
+    }
+    
+    // Determinar dirección de movimiento para animación
+    if (m_useSprite && !m_movementPath.empty()) {
+        sf::Vector2i nextPos = m_movementPath.front();
+        sf::Vector2i direction = nextPos - m_currentPosition;
+        
+        // Convertir dirección a índice de fila (1=up, 2=left, 3=down, 4=right)
+        if (direction.y < 0) m_anim.setDirection(1);      // Up
+        else if (direction.x < 0) m_anim.setDirection(2); // Left
+        else if (direction.y > 0) m_anim.setDirection(3); // Down
+        else if (direction.x > 0) m_anim.setDirection(4); // Right
+    }
+    
+    m_movementTimer += deltaTime;
+    
+    if (m_movementTimer >= MOVEMENT_SPEED) {
+        m_movementTimer = 0.0f;
+        
+        if (!m_movementPath.empty()) {
+            m_currentPosition = m_movementPath.front();
+            m_movementPath.erase(m_movementPath.begin());
+            consumePM(1); // Descontar 1 PM por cada paso
+        }
+        
+        if (m_movementPath.empty()) {
+            m_isMovingToTarget = false;
+            m_state = PawnState::Idle;
+            if (m_useSprite) {
+                m_anim.setDirection(0); // Volver a idle
+            }
+        }
+    }
+}
+
+void Pawn::updateScreenPosition(const Map& map) {
+    sf::Vector2f targetPos = map.getTileCenter(m_currentPosition.x, m_currentPosition.y);
+    
+    if (m_isMovingToTarget && !m_movementPath.empty()) {
+        // Interpolar entre la posición actual y la siguiente en el camino
+        sf::Vector2i nextPos = m_movementPath.front();
+        sf::Vector2f nextScreenPos = map.getTileCenter(nextPos.x, nextPos.y);
+        
+        float progress = m_movementTimer / MOVEMENT_SPEED;
+        m_screenPosition = m_screenPosition + (nextScreenPos - m_screenPosition) * progress;
+    } else {
+        m_screenPosition = targetPos;
+    }
+}
+
+void Pawn::consumePM(int amount) {
+    m_remainingPM = std::max(0, m_remainingPM - amount);
+}
+
+sf::FloatRect Pawn::getGlobalBounds() const {
+    if (m_useSprite) {
+        return m_sprite.getGlobalBounds();
+    } else {
+        return m_pawnShape.getGlobalBounds();
+    }
+}
