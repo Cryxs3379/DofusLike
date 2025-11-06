@@ -47,7 +47,17 @@ namespace Display {
 	}
 
 	void centerMapInView(Map& map) {
+		static bool s_firstCenter = true;
 		map.setCenteredOffset(sf::Vector2f(VIRTUAL_W, VIRTUAL_H));
+		
+		// Log de diagnóstico solo la primera vez
+		if (s_firstCenter) {
+			// Obtener offset del mapa para mostrarlo
+			sf::Vector2f offset = map.getTileTopLeft(0, 0);
+			std::cout << "[Display] Center OK: offset=(" << offset.x << "," << offset.y 
+			          << "), view=" << VIRTUAL_W << "x" << VIRTUAL_H << std::endl;
+			s_firstCenter = false;
+		}
 	}
 }
 

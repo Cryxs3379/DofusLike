@@ -1,10 +1,13 @@
 #include "app/App.h"
 #include <iostream>
 #include "systems/Display.h"
+#include "systems/Assets.h"
 
 App::App() : m_window(sf::VideoMode({1200u, 800u}), "DofusLike - Sistema de Turnos"),
              m_player(sf::Vector2i(7, 7), EntityType::Player),
              m_enemy(sf::Vector2i(10, 10), EntityType::Enemy),
+             m_bg(*Assets::getEmptyTexture()),  // Sprite con textura vacía inicial
+             m_hasBgTexture(false),
              m_isTargeting(false),
              m_currentTargetCell(-1, -1),
              m_activeSpellIndex(0),
@@ -24,6 +27,20 @@ App::App() : m_window(sf::VideoMode({1200u, 800u}), "DofusLike - Sistema de Turn
     m_hud.setVirtualScale(calculateVirtualScale());
     Display::applyLetterbox(m_window);
     Display::centerMapInView(m_map);
+    
+    // Cargar imagen de fondo
+    if (auto tex = Assets::getTexture("data/Background/Mapa1Dofus.jpg")) {
+        m_bg.setTexture(*tex);
+        sf::Vector2f vsize{Display::VIRTUAL_W, Display::VIRTUAL_H}; // 1280x720
+        auto tsz = tex->getSize();
+        m_bg.setScale({vsize.x / tsz.x, vsize.y / tsz.y});
+        m_bg.setPosition({0.f, 0.f});
+        m_hasBgTexture = true;
+        std::cout << "[App] Fondo cargado: " << tsz.x << "x" << tsz.y << std::endl;
+    } else {
+        m_hasBgTexture = false;
+        std::cout << "[App] Error: no se pudo cargar data/Background/Mapa1Dofus.jpg" << std::endl;
+    }
     
     // Cargar mapa inicial
     loadMapFromFile(m_currentMapFile);
@@ -179,7 +196,12 @@ void App::render() {
     // Dibujo con la view letterbox (mundo + HUD)
     Display::applyLetterbox(m_window);
     
-    // Renderizar el mapa
+    // Renderizar fondo de imagen primero (si tiene textura válida)
+    if (m_hasBgTexture) {
+        m_window.draw(m_bg);
+    }
+    
+    // Renderizar el mapa encima del fondo
     m_map.render(m_window);
     
     // Renderizar casillas alcanzables solo en turno del jugador
@@ -476,6 +498,9 @@ void App::loadMapFromFile(const std::string& path) {
         if (m_map.loadFromArray(mapData.width, mapData.height, mapData.blocked)) {
             std::cout << "Mapa cargado exitosamente desde: " << path << std::endl;
             m_currentMapFile = path;
+            
+            // Recentrar el mapa después de cargarlo
+            Display::centerMapInView(m_map);
             
             // Recalcular todo después de cargar el mapa
             updateReachableTiles();

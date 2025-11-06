@@ -1,0 +1,27 @@
+# ============================================================================
+# OPCIONAL: Añadir al final de CMakeLists.txt para copiar data/ automáticamente
+# ============================================================================
+# Si quieres que CMake copie el directorio data/ (con tus imágenes de fondo)
+# al build automáticamente, añade este código al final de CMakeLists.txt:
+
+# Copiar data al directorio de salida (opcional - solo si quieres distribuir data/)
+if(COPY_ASSETS_ON_BUILD)
+    add_custom_command(TARGET DofusLike POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/data
+                $<TARGET_FILE_DIR:DofusLike>/data
+        COMMENT "Copying data directory to output..."
+    )
+endif()
+
+# ============================================================================
+# Instrucciones de uso:
+# ============================================================================
+# 1. Copia las líneas de arriba (desde "# Copiar data..." hasta "endif()")
+# 2. Pega al final de CMakeLists.txt (después de la sección de assets)
+# 3. Recompila:
+#    cd build
+#    cmake --build . --config Debug
+# 4. Ahora build/Debug/data/ se copia automáticamente
+# ============================================================================
+

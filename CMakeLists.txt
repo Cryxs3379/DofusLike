@@ -39,6 +39,15 @@ if(COPY_ASSETS_ON_BUILD)
                 $<TARGET_FILE_DIR:DofusLike>/assets
         COMMENT "Copying assets to output directory..."
     )
+    
+    # Copiar data al directorio de salida (para fondos e imágenes)
+    add_custom_command(TARGET DofusLike POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:DofusLike>/data
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/data
+                $<TARGET_FILE_DIR:DofusLike>/data
+        COMMENT "Copying data directory to output..."
+    )
 else()
     message(STATUS "COPY_ASSETS_ON_BUILD is OFF: assets will NOT be copied automatically")
 endif()

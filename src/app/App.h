@@ -27,6 +27,8 @@ private:
     Entity m_enemy;
     std::vector<sf::Vector2i> m_reachableTiles;
     sf::Clock m_clock;
+    sf::Sprite m_bg;  // Sprite de fondo
+    bool m_hasBgTexture;  // Flag para saber si hay textura de fondo cargada
     
     // Sistema de targeting
     bool m_isTargeting;
